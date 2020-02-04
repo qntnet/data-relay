@@ -5,7 +5,7 @@ import json
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from secgov.conf import FORMS_DIR_NAME
+from secgov.conf import SECGOV_FORMS_DIR_NAME
 
 DATE_FORMAT = '%Y-%m-%d'
 
@@ -47,7 +47,7 @@ def get_fillings(types=None, ciks=None, facts=None, skip_segment=None, min_date=
     if types is not None:
         types = [t.replace('/', '-') for t in types]
     file_names = []
-    for root, dirs, files in os.walk(FORMS_DIR_NAME):
+    for root, dirs, files in os.walk(SECGOV_FORMS_DIR_NAME):
         if len(files) == 0:
             continue
         rp = root.split(os.sep)

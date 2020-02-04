@@ -17,8 +17,10 @@ from django.contrib import admin
 from django.urls import path
 
 import secgov.views
+import listing.views
 
 urlpatterns = [
     path('sec.gov/forms', secgov.views.get_sec_gov_forms),
+    path('assets', listing.views.get_assets),
     #path('admin/', admin.site.urls),
 ]

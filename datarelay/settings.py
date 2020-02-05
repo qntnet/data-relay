@@ -10,7 +10,7 @@ https://docs.djangoproject.com/en/2.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
-
+import json
 import os
 import logging
 
@@ -26,12 +26,15 @@ def get_env(key, def_val):
         return def_val
 
 
-from settings import AVANTAGE_KEY, WORK_DIR, MASTER_ADDR
+from settings import AVANTAGE_KEY, WORK_DIR, MASTER_ADDR, SYMBOLS
 
 
 AVANTAGE_KEY = get_env("AVANTAGE_KEY", AVANTAGE_KEY)
 WORK_DIR = get_env("WORK_DIR", WORK_DIR)
 MASTER_ADDR = get_env("MASTER_ADDR", MASTER_ADDR)
+SYMBOLS = get_env("SYMBOLS", SYMBOLS)
+if isinstance(SYMBOLS, str):
+    SYMBOLS = json.loads(SYMBOLS)
 
 LOGGING = {
     'version': 1,
@@ -78,7 +81,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'secgov',
-    'listing'
+    'assets'
 ]
 
 MIDDLEWARE = [

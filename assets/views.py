@@ -3,7 +3,7 @@ import json
 
 from django.http import HttpResponse
 
-from listing.conf import LISTING_FILE_NAME
+from assets.conf import ASSETS_LIST_FILE_NAME
 
 DATE_FORMAT = '%Y-%m-%d'
 
@@ -15,13 +15,14 @@ def get_assets(request):
     max_date = request.GET.get('max_date', datetime.date.today().isoformat())
     max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date()
 
-    with open(LISTING_FILE_NAME, 'r') as f:
+    with open(ASSETS_LIST_FILE_NAME, 'r') as f:
         tickers = f.read()
     tickers = json.loads(tickers)
     tickers = [t for t in tickers if is_liquid_in_dates(t, min_date, max_date)]
     for t in tickers:
         del t['internal_id']
         del t['liquid_ranges']
+        del t['avantage_symbol']
 
     tickers.sort(key = lambda t: t['id'])
     str_tickers = json.dumps(tickers)

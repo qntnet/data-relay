@@ -22,5 +22,6 @@ import assets.views
 urlpatterns = [
     path('sec.gov/forms', secgov.views.get_sec_gov_forms),
     path('assets', assets.views.get_assets),
+    path('data', assets.views.get_data),
     # path('admin/', admin.site.urls),
 ]

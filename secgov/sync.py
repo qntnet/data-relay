@@ -7,7 +7,7 @@ from secgov.conf import SEC_GOV_LAST_ID_FILE_NAME, BASE_URL, SECGOV_FORMS_DIR_NA
 
 logger = logging.getLogger(__name__)
 
-
+# TODO LIMIT BY ASSETS
 def sync():
     logger.info("Sync sec.gov forms...")
     last_id = 0
@@ -37,3 +37,7 @@ def sync():
         with open(SEC_GOV_LAST_ID_FILE_NAME, 'w') as f:
             f.write(str(last_id))
     logger.info("Done.")
+
+
+if __name__ == "__main__":
+    sync()

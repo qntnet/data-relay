@@ -61,7 +61,7 @@ def sync_data():
         ext_data = xr.concat([split_cumprod, is_liquid], pd.Index(["split_cumprod", "is_liquid"], name="field"))
         data = xr.concat([avantage_data, ext_data], "field")
 
-        file_name = os.path.join(ASSETS_DATA_DIR, a['symbol'] + '.nc')
+        file_name = os.path.join(ASSETS_DATA_DIR, a['id'] + '.nc')
         data.to_netcdf(path=file_name, compute=True)
     logger.info("Done.")
 

@@ -1,4 +1,6 @@
+import base64
 import datetime
+import gzip
 import os
 import logging
 import json
@@ -7,10 +9,10 @@ import urllib.request
 import time
 import sys
 import pandas as pd
-from datarelay.http import load_with_retry
+from datarelay.http import request_with_retry
 from datarelay.settings import AVANTAGE_KEY, SYMBOLS
 from assets.conf import ASSETS_LIST_URL, ASSETS_LIST_FILE_NAME, ASSETS_DIR, AVANTAGE_DELAY, AVANTAGE_RATE_LIMIT_DELAY, \
-    ASSETS_DATA_DIR
+    ASSETS_DATA_DIR, ASSETS_DATA_VERIFY_URL
 import xarray as xr
 import numpy as np
 logger = logging.getLogger(__name__)
@@ -23,7 +25,7 @@ def sync_list():
     min_id = 0
     while True:
         url = ASSETS_LIST_URL + "?min_id=" + str(min_id + 1)
-        page = load_with_retry(url)
+        page = request_with_retry(url)
         page = json.loads(page)
         if len(page) == 0:
             break
@@ -47,6 +49,17 @@ def sync_data():
         if avantage_data is None:
             continue
         # TODO VERIFY WITH OUR API
+
+        d = avantage_data.to_netcdf(compute=True)
+        d = gzip.compress(d)
+        d = base64.b64encode(d)
+        url = ASSETS_DATA_VERIFY_URL + "/" + str(a['internal_id']) + "/"
+        approved_range = request_with_retry(url, d)
+        if approved_range is None:
+            continue
+        approved_range = json.loads(approved_range)
+        logger.info("approved range " + str(approved_range))
+        avantage_data = avantage_data.loc[:, approved_range[0]:approved_range[1]]
 
         split_cumprod = avantage_data.sel(field="split").cumprod()
         is_liquid = split_cumprod.copy(True)
@@ -138,7 +151,7 @@ def rate_limited_raw_call(**kwargs):
         except KeyboardInterrupt:
             raise
         except:
-            logger.error("Unexpected error:", sys.exc_info()[0])
+            logger.exception("unexpected")
             continue
         if "https://www.alphavantage.co/premium/" in raw:
             logger.warning("rate limit")

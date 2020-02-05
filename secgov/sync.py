@@ -1,4 +1,4 @@
-from datarelay.http import load_with_retry
+from datarelay.http import request_with_retry
 import os
 import json
 import logging
@@ -20,7 +20,7 @@ def sync():
         logger.exception("can't read " + SEC_GOV_LAST_ID_FILE_NAME)
     while True:
         url = BASE_URL + "?min_id=" + str(last_id + 1)
-        raw = load_with_retry(url)
+        raw = request_with_retry(url)
         if raw is None:
             break
         lst = json.loads(raw)

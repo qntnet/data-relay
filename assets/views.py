@@ -5,6 +5,8 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+
 from assets.conf import ASSETS_LIST_FILE_NAME, ASSETS_DATA_DIR
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -46,7 +48,7 @@ def date_ranges_intersect(d11, d12, d21, d22):
 
 MAX_DATA_POINTS_PER_REQUEST = 10*1000*1000
 
-
+@csrf_exempt
 def get_data(request):
     str_body = request.body.decode()
     dict = json.loads(str_body)
@@ -84,14 +86,11 @@ def get_data(request):
             continue
         part = xr.open_dataarray(fn, cache=True, decode_times=True)
         part = part.compute()
-        part = part.loc[:, max_date:min_date]
+        part = part.loc[:, min_date.isoformat():max_date.isoformat()]
         if len(part.coords['time']) == 0:
             continue
-        if output is None:
-            output = part
-        else:
-            part.name = a.external_id
-            output.append(part)
+        part.name = a['id']
+        output.append(part)
 
     if len(output) == 0:
         return HttpResponse('', content_type='application/x-netcdf')

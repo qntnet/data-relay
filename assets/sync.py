@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def sync_list():
-    logger.info("Download assets list...")
+    logger.info("Download asset list...")
     os.makedirs(ASSETS_DIR, exist_ok=True)
     listing = []
     min_id = 0
@@ -39,7 +39,7 @@ def sync_list():
 
 
 def sync_data():
-    logger.info("Download data...")
+    logger.info("Download assets data...")
     os.makedirs(ASSETS_DATA_DIR, exist_ok=True)
     with open(ASSETS_LIST_FILE_NAME, 'r') as f:
         assets = f.read()
@@ -48,14 +48,13 @@ def sync_data():
         avantage_data = load_series_daily_adjusted(a['avantage_symbol'])
         if avantage_data is None:
             continue
-        # TODO VERIFY WITH OUR API
-
         d = avantage_data.to_netcdf(compute=True)
         d = gzip.compress(d)
         d = base64.b64encode(d)
         url = ASSETS_DATA_VERIFY_URL + "/" + str(a['internal_id']) + "/"
         approved_range = request_with_retry(url, d)
         if approved_range is None:
+            logger.info("approved range None")
             continue
         approved_range = json.loads(approved_range)
         logger.info("approved range " + str(approved_range))
@@ -85,6 +84,10 @@ def load_series_daily_adjusted(symbol):
     params['symbol'] = symbol
     params['outputsize'] = 'full'
     res = json_call(**params)
+
+    if 'Time Series (Daily)' not in res:
+        return None
+
     try:
         res = res['Time Series (Daily)']
 

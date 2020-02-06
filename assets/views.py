@@ -23,6 +23,7 @@ def get_assets(request):
         tickers = f.read()
     tickers = json.loads(tickers)
     tickers = [t for t in tickers if is_liquid_in_dates(t, min_date, max_date)]
+    tickers = [t for t in tickers if os.path.exists(os.path.join(ASSETS_DATA_DIR, t['id'] + '.nc'))]
     for t in tickers:
         del t['internal_id']
         del t['liquid_ranges']

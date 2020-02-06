@@ -14,10 +14,7 @@ DATE_FORMAT = '%Y-%m-%d'
 
 def get_idx_list(request):
     min_date = request.GET.get('min_date', '2007-01-01')
-    min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date()
-
     max_date = request.GET.get('max_date', datetime.date.today().isoformat())
-    max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date()
 
     with open(IDX_LIST_FILE_NAME, 'r') as f:
         tickers = f.read()
@@ -36,11 +33,8 @@ def get_idx_data(request):
 
     ids = dict['ids']
 
-    min_date = dict['min_date']
-    min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date()
-
-    max_date = dict['max_date']
-    max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date()
+    min_date = request.GET.get('min_date', '2007-01-01')
+    max_date = request.GET.get('max_date', datetime.date.today().isoformat())
 
     if min_date > max_date:
         return HttpResponse('wrong dates: min_date > max_date', status_code=400)
@@ -60,7 +54,7 @@ def get_idx_data(request):
             continue
         part = xr.open_dataarray(fn, cache=True, decode_times=True)
         part = part.compute()
-        part = part.loc[min_date.isoformat():max_date.isoformat()]
+        part = part.loc[min_date:max_date]
         if len(part.time) == 0:
             continue
         part.name = a['id']

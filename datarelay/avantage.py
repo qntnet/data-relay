@@ -7,13 +7,10 @@ import urllib.request
 import logging
 import numpy as np
 import xarray as xr
-from datarelay.settings import AVANTAGE_KEY
+from datarelay.settings import AVANTAGE_KEY, AVANTAGE_DELAY, AVANTAGE_TIMEOUT, AVANTAGE_RATE_LIMIT_DELAY
 
 logger = logging.getLogger(__name__)
 
-AVANTAGE_DELAY = 12
-AVANTAGE_TIMEOUT = 12
-AVANTAGE_RATE_LIMIT_DELAY = 60
 
 SPLIT_FIELD = '8. split coefficient'
 DIVS_FIELD = '7. dividend amount'

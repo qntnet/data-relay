@@ -33,15 +33,6 @@ try:
 except:
     pass
 
-AVANTAGE_KEY = get_env("AVANTAGE_KEY", AVANTAGE_KEY)
-WORK_DIR = get_env("WORK_DIR", WORK_DIR)
-MASTER_ADDR = get_env("MASTER_ADDR", MASTER_ADDR)
-SYMBOLS = get_env("SYMBOLS", SYMBOLS)
-if isinstance(SYMBOLS, str):
-    SYMBOLS = json.loads(SYMBOLS)
-INDEXES = get_env("INDEXES", INDEXES)
-if isinstance(INDEXES, str):
-    INDEXES = json.loads(INDEXES)
 
 LOGGING = {
     'version': 1,

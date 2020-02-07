@@ -4,7 +4,7 @@ import json
 import logging
 import os
 
-from assets.sync import load_series_daily_adjusted
+from datarelay.avantage import load_series_daily_adjusted
 from datarelay.http import request_with_retry
 from datarelay.settings import INDEXES
 from idx.conf import IDX_DIR, IDX_LIST_URL, IDX_LIST_FILE_NAME, IDX_DATA_DIR, IDX_DATA_VERIFY_URL

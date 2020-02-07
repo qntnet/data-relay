@@ -1,18 +1,18 @@
 import urllib.request
 import urllib.error
-import traceback
 import time
 import logging
 
+from datarelay.settings import MASTER_TIMEOUT, MASTER_ERROR_DELAY
+
 logger = logging.getLogger(__name__)
-ERROR_DELAY = 5
 
 
 def request_with_retry(url, data = None):
     while True:
         try:
             logger.info("request " + url)
-            response = urllib.request.urlopen(url, data=data, timeout=20)
+            response = urllib.request.urlopen(url, data=data, timeout=MASTER_TIMEOUT)
             raw = response.read()
             return raw
         except KeyboardInterrupt:
@@ -22,7 +22,7 @@ def request_with_retry(url, data = None):
                 return None
             else:
                 logger.exception("wrong status code")
-                time.sleep(ERROR_DELAY)
+                time.sleep(MASTER_ERROR_DELAY)
         except:
             logging.exception("request exception")
-            time.sleep(ERROR_DELAY)
+            time.sleep(MASTER_ERROR_DELAY)

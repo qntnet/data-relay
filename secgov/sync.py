@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 def sync():
     logger.info("Sync sec.gov forms...")
 
+    os.makedirs(SECGOV_FORMS_DIR_NAME, exist_ok=True)
+
     with open(ASSETS_LIST_FILE_NAME, 'r') as f:
         tickers = f.read()
     tickers = json.loads(tickers)

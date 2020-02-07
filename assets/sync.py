@@ -22,17 +22,17 @@ def sync_list():
     logger.info("Download asset list...")
     os.makedirs(ASSETS_DIR, exist_ok=True)
     listing = []
+    symbols_json = json.dumps(SYMBOLS).encode()
     min_id = 0
     while True:
         url = ASSETS_LIST_URL + "?min_id=" + str(min_id + 1)
-        page = request_with_retry(url)
+        page = request_with_retry(url, symbols_json)
         page = json.loads(page)
         if len(page) == 0:
             break
         for a in page:
             min_id = max(min_id, a['internal_id'])
-            if SYMBOLS is None or a['symbol'] in SYMBOLS:
-                listing.append(a)
+            listing.append(a)
     with open(ASSETS_LIST_FILE_NAME, 'w') as f:
         f.write(json.dumps(listing, indent=2))
     logger.info('Done.')

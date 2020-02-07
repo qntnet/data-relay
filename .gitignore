@@ -1,4 +1,5 @@
 .idea/
 *.iml
 work/
+out/
 /settings.py

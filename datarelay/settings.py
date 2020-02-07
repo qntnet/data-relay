@@ -26,8 +26,12 @@ def get_env(key, def_val):
         return def_val
 
 
-from settings import AVANTAGE_KEY, WORK_DIR, MASTER_ADDR, SYMBOLS, INDEXES
+from settings_default import *
 
+try:
+    from settings import *
+except:
+    pass
 
 AVANTAGE_KEY = get_env("AVANTAGE_KEY", AVANTAGE_KEY)
 WORK_DIR = get_env("WORK_DIR", WORK_DIR)

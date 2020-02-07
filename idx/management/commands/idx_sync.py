@@ -1,7 +1,8 @@
 from django.core.management import BaseCommand
 
-import assets.sync
+import idx.sync
 
 class Command(BaseCommand):
     def handle(self, **options):
-        assets.sync.sync_data()
+        idx.sync.sync_list()
+        idx.sync.sync_series()

@@ -6,6 +6,7 @@ import os
 
 from assets.sync import load_series_daily_adjusted
 from datarelay.http import request_with_retry
+from datarelay.settings import INDEXES
 from idx.conf import IDX_DIR, IDX_LIST_URL, IDX_LIST_FILE_NAME, IDX_DATA_DIR, IDX_DATA_VERIFY_URL
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,7 @@ def sync_list():
     url = IDX_LIST_URL
     listing = request_with_retry(url)
     listing = json.loads(listing)
+    listing = [l for l in listing if INDEXES is None or l['id'] in INDEXES]
     with open(IDX_LIST_FILE_NAME, 'w') as f:
         f.write(json.dumps(listing, indent=2))
     logger.info('Done.')
@@ -28,8 +30,6 @@ def sync_series():
         listing = f.read()
     listing = json.loads(listing)
     for a in listing:
-        #if a['id'] != 'SPX':
-        #    continue
         avantage_data = load_series_daily_adjusted(a['id'])
         if avantage_data is None:
             continue

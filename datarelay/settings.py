@@ -26,7 +26,7 @@ def get_env(key, def_val):
         return def_val
 
 
-from settings import AVANTAGE_KEY, WORK_DIR, MASTER_ADDR, SYMBOLS
+from settings import AVANTAGE_KEY, WORK_DIR, MASTER_ADDR, SYMBOLS, INDEXES
 
 
 AVANTAGE_KEY = get_env("AVANTAGE_KEY", AVANTAGE_KEY)
@@ -35,6 +35,9 @@ MASTER_ADDR = get_env("MASTER_ADDR", MASTER_ADDR)
 SYMBOLS = get_env("SYMBOLS", SYMBOLS)
 if isinstance(SYMBOLS, str):
     SYMBOLS = json.loads(SYMBOLS)
+INDEXES = get_env("INDEXES", INDEXES)
+if isinstance(INDEXES, str):
+    INDEXES = json.loads(INDEXES)
 
 LOGGING = {
     'version': 1,
@@ -81,7 +84,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'secgov',
-    'assets'
+    'assets',
+    'idx',
+    'datarelay'
 ]
 
 MIDDLEWARE = [

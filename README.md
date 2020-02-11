@@ -68,7 +68,7 @@ Sometimes, you have to write the right address of your data server
 into `DATA_BASE_URL` (environmental variable)  For example,
 if you use another port number for the data server. 
 You can set this variable in your script, 
-but don`t forget remove that code, when you will deploy your code on quantiacs.ai
+but don`t forget remove that code, when you will deploy your code on quantnet.ai
 ```python
 import os
 os.environ["DATA_BASE_URL"] = 'http://127.0.0.1:8000/'

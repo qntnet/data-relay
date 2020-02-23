@@ -3,6 +3,7 @@ from django.core.management import BaseCommand
 import idx.sync
 import assets.sync
 import secgov.sync
+import crypto.sync
 
 class Command(BaseCommand):
     def handle(self, **options):
@@ -11,3 +12,4 @@ class Command(BaseCommand):
         secgov.sync.sync()
         idx.sync.sync_list()
         idx.sync.sync_series()
+        crypto.sync.sync()

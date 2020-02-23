@@ -19,10 +19,12 @@ from django.urls import path
 import secgov.views
 import assets.views
 import idx.views
+import crypto.views
 
 urlpatterns = [
     path('sec.gov/forms', secgov.views.get_sec_gov_forms),
     path('assets', assets.views.get_assets),
+    path('crypto', crypto.views.get_crypto_series),
     path('data', assets.views.get_data),
     path('idx/list', idx.views.get_idx_list),
     path('idx/data', idx.views.get_idx_data),

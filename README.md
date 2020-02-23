@@ -47,8 +47,8 @@ INDEXES = ['SPX']                       # List of index symbols or None to sync 
 ## Load data
 
 ```bash
-$ conda activate datarelay
-$ python3 manage.py sync
+conda activate datarelay
+python3 manage.py sync
 ```
 
 It takes some time, especially if you set `SYMBOLS = None`. 
@@ -57,8 +57,8 @@ Also the synchronization of edgar database takes some time...
 
 ## Run the data server
 ```bash
-$ conda activate datarelay # it may be not necessary, if you activated it before
-$ python3 manage.py runserver 0.0.0.0:8000
+conda activate datarelay # it may be not necessary, if you activated it before
+python3 manage.py runserver 0.0.0.0:8000
 ```
 
 ## Use it!

@@ -81,7 +81,8 @@ INSTALLED_APPS = [
     'secgov',
     'assets',
     'idx',
-    'datarelay'
+    'datarelay',
+    'crypto'
 ]
 
 MIDDLEWARE = [

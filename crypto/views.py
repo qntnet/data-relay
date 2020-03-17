@@ -7,8 +7,6 @@ DATE_FORMAT = '%Y-%m-%d'
 
 
 def get_crypto_series(request):
-    data = xr.open_dataarray(CRYPTO_FILE_NAME)
-
     min_date = request.GET.get('min_date')
     if min_date is None:
         min_date = '2007-01-01'
@@ -20,7 +18,9 @@ def get_crypto_series(request):
     else:
         max_date = parse_datetime(max_date)
 
-    data = data.sel(time=slice(min_date,max_date))
+    data = xr.open_dataarray(CRYPTO_FILE_NAME)
+    data = data.sel(time=slice(max_date,min_date))
+
     ncdf = data.to_netcdf(compute=True)
     return HttpResponse(ncdf, content_type='application/x-netcdf')
 

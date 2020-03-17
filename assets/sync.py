@@ -7,8 +7,9 @@ import pandas as pd
 
 from datarelay.avantage import load_series_daily_adjusted
 from datarelay.http import request_with_retry
-from datarelay.settings import SYMBOLS
-from assets.conf import ASSETS_LIST_URL, ASSETS_LIST_FILE_NAME, ASSETS_DIR, ASSETS_DATA_DIR, ASSETS_DATA_VERIFY_URL
+from datarelay.settings import SYMBOLS, RELAY_KEY
+from assets.conf import ASSETS_LIST_URL, ASSETS_LIST_FILE_NAME, ASSETS_DIR, ASSETS_DATA_DIR, ASSETS_DATA_VERIFY_URL, \
+    ASSETS_DATA_FULL_URL
 import xarray as xr
 
 logger = logging.getLogger(__name__)
@@ -41,22 +42,29 @@ def sync_data():
         assets = f.read()
     assets = json.loads(assets)
     for a in assets:
-        avantage_data = load_series_daily_adjusted(a['avantage_symbol'])
-        if avantage_data is None:
-            continue
-        d = avantage_data.to_netcdf(compute=True)
-        d = gzip.compress(d)
-        d = base64.b64encode(d)
-        url = ASSETS_DATA_VERIFY_URL + "/" + str(a['internal_id']) + "/"
-        approved_range = request_with_retry(url, d)
-        if approved_range is None:
-            logger.info("approved range None")
-            continue
-        approved_range = json.loads(approved_range)
-        logger.info("approved range " + str(approved_range))
-        avantage_data = avantage_data.loc[:, approved_range[0]:approved_range[1]]
+        if RELAY_KEY is None:
+            main_data = load_series_daily_adjusted(a['avantage_symbol']) # FORWARD ORDER
+            if main_data is None:
+                continue
+            d = main_data.to_netcdf(compute=True)
+            d = gzip.compress(d)
+            d = base64.b64encode(d)
+            url = ASSETS_DATA_VERIFY_URL + "/" + str(a['internal_id']) + "/"
+            approved_range = request_with_retry(url, d)
+            if approved_range is None:
+                logger.info("approved range None")
+                continue
+            approved_range = json.loads(approved_range)
+            logger.info("approved range " + str(approved_range))
+            main_data = main_data.loc[:, approved_range[0]:approved_range[1]]
+        else:
+            url = ASSETS_DATA_FULL_URL + "/" + str(a['internal_id']) + "/"
+            main_data = request_with_retry(url)
+            if main_data is None:
+                continue
+            main_data = xr.open_dataarray(main_data)
 
-        split_cumprod = avantage_data.sel(field="split").cumprod()
+        split_cumprod = main_data.sel(field="split").cumprod()
         is_liquid = split_cumprod.copy(True)
         is_liquid[:] = 0
 
@@ -67,7 +75,7 @@ def sync_data():
                 pass
 
         ext_data = xr.concat([split_cumprod, is_liquid], pd.Index(["split_cumprod", "is_liquid"], name="field"))
-        data = xr.concat([avantage_data, ext_data], "field")
+        data = xr.concat([main_data, ext_data], "field")
 
         file_name = os.path.join(ASSETS_DATA_DIR, a['id'] + '.nc')
         data.to_netcdf(path=file_name, compute=True)

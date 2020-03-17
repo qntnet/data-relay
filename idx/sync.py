@@ -3,11 +3,13 @@ import gzip
 import json
 import logging
 import os
+import xarray as xr
 
 from datarelay.avantage import load_series_daily_adjusted
 from datarelay.http import request_with_retry
-from datarelay.settings import INDEXES
-from idx.conf import IDX_DIR, IDX_LIST_URL, IDX_LIST_FILE_NAME, IDX_DATA_DIR, IDX_DATA_VERIFY_URL
+from datarelay.settings import INDEXES, RELAY_KEY
+from idx.conf import IDX_DIR, IDX_LIST_URL, IDX_LIST_FILE_NAME, IDX_DATA_DIR, IDX_DATA_VERIFY_URL, IDX_DATA_FULL_URL
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,21 +32,28 @@ def sync_series():
         listing = f.read()
     listing = json.loads(listing)
     for a in listing:
-        avantage_data = load_series_daily_adjusted(a['id'])
-        if avantage_data is None:
-            continue
-        avantage_data = avantage_data.sel(field='close')
-        d = avantage_data.to_netcdf(compute=True)
-        d = gzip.compress(d)
-        d = base64.b64encode(d)
-        url = IDX_DATA_VERIFY_URL + "/" + str(a['id']) + "/"
-        approved_range = request_with_retry(url, d)
-        if approved_range is None:
-            logger.info("approved range None")
-            continue
-        approved_range = json.loads(approved_range)
-        logger.info("approved range " + str(approved_range))
-        data = avantage_data.loc[approved_range[0]:approved_range[1]]
+        if RELAY_KEY is None:
+            avantage_data = load_series_daily_adjusted(a['id'])
+            if avantage_data is None:
+                continue
+            avantage_data = avantage_data.sel(field='close')
+            d = avantage_data.to_netcdf(compute=True)
+            d = gzip.compress(d)
+            d = base64.b64encode(d)
+            url = IDX_DATA_VERIFY_URL + "/" + str(a['id']) + "/"
+            approved_range = request_with_retry(url, d)
+            if approved_range is None:
+                logger.info("approved range None")
+                continue
+            approved_range = json.loads(approved_range)
+            logger.info("approved range " + str(approved_range))
+            data = avantage_data.loc[approved_range[0]:approved_range[1]]
+        else:
+            url = IDX_DATA_FULL_URL + "/" + str(a['id']) + "/"
+            data = request_with_retry(url)
+            if data is None:
+                continue
+            data = xr.open_dataarray(data)
         file_name = os.path.join(IDX_DATA_DIR, a['id'] + '.nc')
         data.to_netcdf(path=file_name, compute=True)
     logger.info("Done.")

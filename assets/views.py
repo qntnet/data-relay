@@ -88,7 +88,7 @@ def get_data(request):
         part = xr.open_dataarray(fn, cache=True, decode_times=True)
         part = part.compute()
         part = part.loc[:, min_date.isoformat():max_date.isoformat()]
-        if len(part.coords['time']) == 0:
+        if len(part.time) == 0:
             continue
         part.name = a['id']
         output.append(part)

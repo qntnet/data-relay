@@ -12,7 +12,9 @@ from assets.conf import ASSETS_LIST_URL, ASSETS_LIST_FILE_NAME, ASSETS_DIR, ASSE
     ASSETS_DATA_FULL_URL
 import xarray as xr
 
+
 logger = logging.getLogger(__name__)
+logging.basicConfig(level='INFO')
 
 
 def sync_list():

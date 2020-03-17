@@ -15,3 +15,4 @@ MASTER_ADDR = "https://data-master.quantnet.ai"
 WORK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "work")
 
 RELAY_KEY = None
+NODE_NAME = None

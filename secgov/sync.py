@@ -7,8 +7,9 @@ from secgov.conf import BASE_URL, SECGOV_FORMS_DIR_NAME #, SEC_GOV_LAST_ID_FILE_
 
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level='INFO')
 
-# TODO LIMIT BY ASSETS
+
 def sync():
     logger.info("Sync sec.gov forms...")
 

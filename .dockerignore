@@ -1,0 +1,7 @@
+.idea
+replication.Dockerfile
+settings.py
+.git
+.gitignore
+work
+datarelay.iml

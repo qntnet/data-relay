@@ -12,6 +12,8 @@ from idx.conf import IDX_DIR, IDX_LIST_URL, IDX_LIST_FILE_NAME, IDX_DATA_DIR, ID
 
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level='INFO')
+
 
 def sync_list():
     logger.info("Download idx list...")

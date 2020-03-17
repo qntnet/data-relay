@@ -10,28 +10,16 @@ https://docs.djangoproject.com/en/2.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
-import json
-import os
 import logging
-
-
-logger = logging.getLogger(__name__)
-
-
-def get_env(key, def_val):
-    if key in os.environ:
-        return os.environ[key]
-    else:
-        logger.info("Env " + key + " is not set. Use default => " + str(def_val))
-        return def_val
-
-
 from settings_default import *
 
 try:
     from settings import *
 except:
     pass
+
+
+logger = logging.getLogger(__name__)
 
 
 LOGGING = {
@@ -50,8 +38,6 @@ LOGGING = {
     },
 }
 
-import logging
-logging.basicConfig(level='INFO')
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -64,7 +50,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '@_*egd9(=jniz29!6nra=x%$d$d#71ld^v&!_%7^k*bd&00euv'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_env("DJANGO_DEBUG", "true") == "true"
+DEBUG = os.environ.get("DJANGO_DEBUG", "true") == "true"
 
 ALLOWED_HOSTS = ['*']
 
@@ -82,7 +68,8 @@ INSTALLED_APPS = [
     'assets',
     'idx',
     'datarelay',
-    'crypto'
+    'crypto',
+    'replication'
 ]
 
 MIDDLEWARE = [

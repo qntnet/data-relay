@@ -7,6 +7,7 @@ from datarelay.settings import WORK_DIR
 
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level='INFO')
 
 
 def sync():

@@ -28,7 +28,7 @@ def get_sec_gov_forms(request, last_time=None):
     max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date()
 
     if last_time is not None:
-        last_time = datetime.datetime.strptime(last_time, DATE_FORMAT).date()
+        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
         if last_time < max_date:
             max_date = last_time
 

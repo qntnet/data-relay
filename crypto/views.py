@@ -6,7 +6,7 @@ from crypto.conf import CRYPTO_FILE_NAME
 DATE_FORMAT = '%Y-%m-%d'
 
 
-def get_crypto_series(request):
+def get_crypto_series(request, last_time=None):
     min_date = request.GET.get('min_date')
     if min_date is None:
         min_date = '2007-01-01'
@@ -17,6 +17,11 @@ def get_crypto_series(request):
         max_date = datetime.datetime.now()
     else:
         max_date = parse_datetime(max_date)
+
+    if last_time is not None:
+        last_time = parse_datetime(last_time)
+        if last_time < max_date:
+            max_date = last_time
 
     data = xr.open_dataarray(CRYPTO_FILE_NAME)
     data = data.sel(time=slice(max_date,min_date))

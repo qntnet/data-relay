@@ -28,5 +28,13 @@ urlpatterns = [
     path('data', assets.views.get_data),
     path('idx/list', idx.views.get_idx_list),
     path('idx/data', idx.views.get_idx_data),
+
+
+    path('last/<str:last_time>/sec.gov/forms', secgov.views.get_sec_gov_forms),
+    path('last/<str:last_time>/assets', assets.views.get_assets),
+    path('last/<str:last_time>/crypto', crypto.views.get_crypto_series),
+    path('last/<str:last_time>/data', assets.views.get_data),
+    path('last/<str:last_time>/idx/list', idx.views.get_idx_list),
+    path('last/<str:last_time>/idx/data', idx.views.get_idx_data),
     # path('admin/', admin.site.urls),
 ]

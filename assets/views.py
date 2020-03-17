@@ -12,12 +12,17 @@ from assets.conf import ASSETS_LIST_FILE_NAME, ASSETS_DATA_DIR
 DATE_FORMAT = '%Y-%m-%d'
 
 
-def get_assets(request):
+def get_assets(request, last_time=None):
     min_date = request.GET.get('min_date', '2007-01-01')
     min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date()
 
     max_date = request.GET.get('max_date', datetime.date.today().isoformat())
     max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date()
+
+    if last_time is not None:
+        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
+        if last_time < max_date:
+            max_date = last_time
 
     with open(ASSETS_LIST_FILE_NAME, 'r') as f:
         tickers = f.read()
@@ -50,7 +55,7 @@ def date_ranges_intersect(d11, d12, d21, d22):
 MAX_DATA_POINTS_PER_REQUEST = 10*1000*1000
 
 @csrf_exempt
-def get_data(request):
+def get_data(request, last_time=None):
     str_body = request.body.decode()
     dict = json.loads(str_body)
 
@@ -61,6 +66,11 @@ def get_data(request):
 
     max_date = dict['max_date']
     max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date()
+
+    if last_time is not None:
+        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
+        if last_time < max_date:
+            max_date = last_time
 
     if min_date > max_date:
         return HttpResponse('wrong dates: min_date > max_date', status_code=400)

@@ -12,9 +12,14 @@ from idx.conf import IDX_LIST_FILE_NAME, IDX_DATA_DIR
 DATE_FORMAT = '%Y-%m-%d'
 
 
-def get_idx_list(request):
+def get_idx_list(request,  last_time=None):
     min_date = request.GET.get('min_date', '2007-01-01')
     max_date = request.GET.get('max_date', datetime.date.today().isoformat())
+
+    if last_time is not None:
+        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
+        if last_time < max_date:
+            max_date = last_time
 
     with open(IDX_LIST_FILE_NAME, 'r') as f:
         tickers = f.read()
@@ -27,7 +32,7 @@ def get_idx_list(request):
 
 
 @csrf_exempt
-def get_idx_data(request):
+def get_idx_data(request,  last_time=None):
     str_body = request.body.decode()
     dict = json.loads(str_body)
 
@@ -35,6 +40,11 @@ def get_idx_data(request):
 
     min_date = request.GET.get('min_date', '2007-01-01')
     max_date = request.GET.get('max_date', datetime.date.today().isoformat())
+
+    if last_time is not None:
+        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
+        if last_time < max_date:
+            max_date = last_time
 
     if min_date > max_date:
         return HttpResponse('wrong dates: min_date > max_date', status_code=400)

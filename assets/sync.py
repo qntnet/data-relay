@@ -58,26 +58,27 @@ def sync_data():
                 continue
             approved_range = json.loads(approved_range)
             logger.info("approved range " + str(approved_range))
+
             main_data = main_data.loc[:, approved_range[0]:approved_range[1]]
+
+            split_cumprod = main_data.sel(field="split").cumprod()
+            is_liquid = split_cumprod.copy(True)
+            is_liquid[:] = 0
+
+            for lr in a['liquid_ranges']:
+                try:
+                    is_liquid.loc[lr[0]:lr[1]] = 1
+                except:
+                    pass
+
+            ext_data = xr.concat([split_cumprod, is_liquid], pd.Index(["split_cumprod", "is_liquid"], name="field"))
+            data = xr.concat([main_data, ext_data], "field")
         else:
             url = ASSETS_DATA_FULL_URL + "/" + str(a['internal_id']) + "/"
             main_data = request_with_retry(url)
             if main_data is None:
                 continue
-            main_data = xr.open_dataarray(main_data)
-
-        split_cumprod = main_data.sel(field="split").cumprod()
-        is_liquid = split_cumprod.copy(True)
-        is_liquid[:] = 0
-
-        for lr in a['liquid_ranges']:
-            try:
-                is_liquid.loc[lr[0]:lr[1]] = 1
-            except:
-                pass
-
-        ext_data = xr.concat([split_cumprod, is_liquid], pd.Index(["split_cumprod", "is_liquid"], name="field"))
-        data = xr.concat([main_data, ext_data], "field")
+            data = xr.open_dataarray(main_data)
 
         file_name = os.path.join(ASSETS_DATA_DIR, a['id'] + '.nc')
         data.to_netcdf(path=file_name, compute=True)

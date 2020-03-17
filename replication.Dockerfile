@@ -32,7 +32,7 @@ ENV RELAY_PORT=7070
 ENV DJANGO_DEBUG=true
 
 ENV MASTER_ADDR=http://localhost:7070
-ENV RELAY_KEY=relay_key
+ENV REPLICATION_KEY=relay_key
 
 WORKDIR /opt/
 

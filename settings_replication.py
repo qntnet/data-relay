@@ -10,3 +10,5 @@ NODE_NAME = os.environ.get("NODE_NAME", None)
 
 MASTER_TIMEOUT = int(os.environ.get("TIMEOUT", "5"))
 MASTER_ERROR_DELAY = int(os.environ.get("DELAY", "5"))
+
+SECGOV_INCREMENTAL_UPDATE = True

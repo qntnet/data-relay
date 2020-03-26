@@ -17,7 +17,7 @@ def get_idx_list(request,  last_time=None):
     max_date = request.GET.get('max_date', datetime.date.today().isoformat())
 
     if last_time is not None:
-        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
+        last_time = last_time.split('T')[0]
         if last_time < max_date:
             max_date = last_time
 
@@ -42,7 +42,7 @@ def get_idx_data(request,  last_time=None):
     max_date = request.GET.get('max_date', datetime.date.today().isoformat())
 
     if last_time is not None:
-        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
+        last_time = last_time.split('T')[0]
         if last_time < max_date:
             max_date = last_time
 

@@ -3,6 +3,8 @@ import gzip
 import os
 import logging
 import json
+from random import shuffle
+
 import pandas as pd
 
 from datarelay.avantage import load_series_daily_adjusted
@@ -43,6 +45,8 @@ def sync_data():
     with open(ASSETS_LIST_FILE_NAME, 'r') as f:
         assets = f.read()
     assets = json.loads(assets)
+    shuffle(assets)
+    progress = 0
     for a in assets:
         if RELAY_KEY is None:
             main_data = load_series_daily_adjusted(a['avantage_symbol']) # FORWARD ORDER
@@ -82,6 +86,8 @@ def sync_data():
 
         file_name = os.path.join(ASSETS_DATA_DIR, a['id'] + '.nc')
         data.to_netcdf(path=file_name, compute=True)
+        progress += 1
+        logger.info("progress: " + str(progress) + "/" + str(len(assets)))
     logger.info("Done.")
 
 

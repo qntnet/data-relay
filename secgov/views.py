@@ -5,6 +5,7 @@ import json
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from replication.conf import STOCKS_LAST_DATE_FILE_NAME
 from secgov.conf import SECGOV_FORMS_DIR_NAME
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -21,11 +22,28 @@ def get_sec_gov_forms(request, last_time=None):
     offset = args.get('offset', 0)
     skip_segment = args.get('skip_segment', False)
 
-    min_date = args.get('min_date', '2007-01-01')
-    min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date()
+    min_date = args.get('min_date')
+    min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date() if min_date is not None else datetime.date(2007, 1, 1)
 
-    max_date = args.get('max_date', datetime.date.today().isoformat())
-    max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date()
+    max_date = args.get('max_date')
+    max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date() if max_date is not None else datetime.date.today()
+
+    if min_date > max_date:
+        return HttpResponse('wrong dates: min_date > max_date', status_code=400)
+
+    if last_time is not None:
+        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
+        if last_time < max_date:
+            max_date = last_time
+
+    try:
+        with open(STOCKS_LAST_DATE_FILE_NAME, 'r') as f:
+            max_allowed_date = f.read()
+            max_allowed_date = datetime.datetime.strptime(max_allowed_date, DATE_FORMAT)
+            if max_date > max_allowed_date:
+                max_date = max_allowed_date
+    except:
+        pass
 
     if last_time is not None:
         last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()

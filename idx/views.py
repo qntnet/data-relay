@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from idx.conf import IDX_LIST_FILE_NAME, IDX_DATA_DIR
+from replication.conf import STOCKS_LAST_DATE_FILE_NAME
 
 DATE_FORMAT = '%Y-%m-%d'
 
@@ -20,6 +21,14 @@ def get_idx_list(request,  last_time=None):
         last_time = last_time.split('T')[0]
         if last_time < max_date:
             max_date = last_time
+
+    try:
+        with open(STOCKS_LAST_DATE_FILE_NAME, 'r') as f:
+            max_allowed_date = f.read()
+            if max_date > max_allowed_date:
+                max_date = max_allowed_date
+    except:
+        pass
 
     with open(IDX_LIST_FILE_NAME, 'r') as f:
         tickers = f.read()
@@ -41,13 +50,21 @@ def get_idx_data(request,  last_time=None):
     min_date = request.GET.get('min_date', '2007-01-01')
     max_date = request.GET.get('max_date', datetime.date.today().isoformat())
 
+    if min_date > max_date:
+        return HttpResponse('wrong dates: min_date > max_date', status_code=400)
+
     if last_time is not None:
         last_time = last_time.split('T')[0]
         if last_time < max_date:
             max_date = last_time
 
-    if min_date > max_date:
-        return HttpResponse('wrong dates: min_date > max_date', status_code=400)
+    try:
+        with open(STOCKS_LAST_DATE_FILE_NAME, 'r') as f:
+            max_allowed_date = f.read()
+            if max_date > max_allowed_date:
+                max_date = max_allowed_date
+    except:
+        pass
 
     ids.sort()
 

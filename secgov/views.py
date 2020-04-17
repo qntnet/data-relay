@@ -45,11 +45,6 @@ def get_sec_gov_forms(request, last_time=None):
     except:
         pass
 
-    if last_time is not None:
-        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
-        if last_time < max_date:
-            max_date = last_time
-
     limit = 20
     if facts is not None:
         limit = 20000 // (len(facts) * 10 + 1)

@@ -3,9 +3,7 @@
 The purpose of this project is to create a local data source 
 for local strategy development.
 
-Unfortunately, we can't provide you a full copy of our data 
-because of legal restrictions, so we decided to create this 
-project which will download the data from Alpha Vantage and
+This project which will download the data from Alpha Vantage and
 verify that data with our data server. As result, you will get
 a local data, which you can use for local development.
 

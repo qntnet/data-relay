@@ -9,4 +9,4 @@ IDX_LIST_URL = urljoin(MASTER_ADDR, 'master/idx-list')
 
 IDX_DATA_DIR = os.path.join(IDX_DIR, 'data')
 IDX_DATA_VERIFY_URL = urljoin(MASTER_ADDR, 'master/idx-verify')
-IDX_DATA_FULL_URL = urljoin(MASTER_ADDR, 'master/idx-data/' + RELAY_KEY)
+IDX_DATA_FULL_URL = urljoin(MASTER_ADDR, 'master/idx-data/' + str(RELAY_KEY))

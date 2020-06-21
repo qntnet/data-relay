@@ -9,5 +9,5 @@ CRYPTO_LAST_DATE_FILE_NAME = os.path.join(WORK_DIR, 'crypto.dt.txt')
 STOCKS_LAST_DATE_URL = urljoin(MASTER_ADDR, 'master/last-update')
 CRYPTO_LAST_DATE_URL = urljoin(MASTER_ADDR, 'master/crypto-last-update')
 
-POST_STATUS_URL = urljoin(MASTER_ADDR, 'master/replication/' + RELAY_KEY + "/" + NODE_NAME)
+POST_STATUS_URL = urljoin(MASTER_ADDR, 'master/replication/' + str(RELAY_KEY) + "/" + str(NODE_NAME))
 

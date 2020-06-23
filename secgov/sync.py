@@ -5,6 +5,8 @@ import json
 import logging
 from secgov.conf import BASE_URL, SECGOV_FORMS_DIR_NAME, SEC_GOV_LAST_ID_FILE_NAME
 from datarelay.settings import SECGOV_INCREMENTAL_UPDATE
+import gzip
+from itertools import groupby
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level='INFO')
@@ -44,13 +46,32 @@ def sync():
         if len(lst) == 0:
             break
         for r in lst:
-            d = r['date'].split("-")
-            path = os.path.join(SECGOV_FORMS_DIR_NAME, r['type'].replace('/', '-'), *d, r['cik'])
-            os.makedirs(path, exist_ok=True)
-            fn = os.path.join(path, str(r['id']) + '.json')
-            with open(fn, 'w') as f:
-                f.write(json.dumps(r, indent=2))
             last_id = max(last_id, r['id'])
+
+            d = r['date'].split("-")
+            path = os.path.join(SECGOV_FORMS_DIR_NAME, r['type'].replace('/', '-'), *d, r['cik'], r['url'].split('/data/', 1)[1].split('/',2)[1])
+            os.makedirs(path, exist_ok=True)
+            fn = os.path.join(path, 'meta.json.gz')
+            facts = r['facts']
+            del r['facts']
+
+            with gzip.open(fn, 'wt') as f:
+                r = json.dumps(r)
+                #r = r.encode()
+                #r = gzip.compress(r)
+                f.write(r)
+
+            path = os.path.join(path, "facts")
+            os.makedirs(path, exist_ok=True)
+            for g in groupby(facts, lambda f:f['name']):
+                fn = os.path.join(path, g[0] + '.json.gz')
+                ff = list(g[1])
+                with gzip.open(fn, 'wt') as f:
+                    ff = json.dumps(ff)
+                    #ff = ff.encode()
+                    #ff = gzip.compress(ff)
+                    f.write(ff)
+
         with open(SEC_GOV_LAST_ID_FILE_NAME, 'w') as f:
             f.write(str(last_id))
     logger.info("Done.")

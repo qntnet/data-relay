@@ -69,7 +69,8 @@ INSTALLED_APPS = [
     'idx',
     'datarelay',
     'crypto',
-    'replication'
+    'replication',
+    'futures'
 ]
 
 MIDDLEWARE = [

@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+import futures.views
 import secgov.views
 import assets.views
 import idx.views
@@ -28,6 +29,8 @@ urlpatterns = [
     path('data', assets.views.get_data),
     path('idx/list', idx.views.get_idx_list),
     path('idx/data', idx.views.get_idx_data),
+    path('futures/list', futures.views.get_list),
+    path('futures/data', futures.views.get_data),
 
 
     path('last/<str:last_time>/sec.gov/forms', secgov.views.get_sec_gov_forms),
@@ -36,5 +39,7 @@ urlpatterns = [
     path('last/<str:last_time>/data', assets.views.get_data),
     path('last/<str:last_time>/idx/list', idx.views.get_idx_list),
     path('last/<str:last_time>/idx/data', idx.views.get_idx_data),
+    path('futures/<str:last_time>/list', futures.views.get_list),
+    path('futures/<str:last_time>/data', futures.views.get_data),
     # path('admin/', admin.site.urls),
 ]

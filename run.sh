@@ -19,6 +19,13 @@ case "$1" in
         sleep 600
    done
 ;;
+  'replicate_futures')
+   python -u manage.py replicate_post_status
+   while true ; do
+        python -u manage.py replicate_futures
+        sleep 600
+   done
+;;
   'server')
     python -u server.py
 ;;

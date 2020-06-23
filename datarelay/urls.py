@@ -24,6 +24,7 @@ import crypto.views
 
 urlpatterns = [
     path('sec.gov/forms', secgov.views.get_sec_gov_forms),
+    path('sec.gov/facts', secgov.views.request_facts),
     path('assets', assets.views.get_assets),
     path('crypto', crypto.views.get_crypto_series),
     path('data', assets.views.get_data),
@@ -34,6 +35,7 @@ urlpatterns = [
 
 
     path('last/<str:last_time>/sec.gov/forms', secgov.views.get_sec_gov_forms),
+    path('last/<str:last_time>/sec.gov/facts', secgov.views.request_facts),
     path('last/<str:last_time>/assets', assets.views.get_assets),
     path('last/<str:last_time>/crypto', crypto.views.get_crypto_series),
     path('last/<str:last_time>/data', assets.views.get_data),

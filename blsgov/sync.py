@@ -4,16 +4,17 @@ import json
 import logging
 import os
 import xarray as xr
+import zipfile
+import hashlib
+import shutil
 
 from blsgov.conf import *
 from datarelay.avantage import load_series_daily_adjusted
 from datarelay.http import request_with_retry
-from datarelay.settings import INDEXES, RELAY_KEY
-from idx.conf import IDX_DIR, IDX_LIST_URL, IDX_LIST_FILE_NAME, IDX_DATA_DIR, IDX_DATA_VERIFY_URL, IDX_DATA_FULL_URL
+from datarelay.settings import INDEXES, RELAY_KEY, BLSGOV_DBS
 
-import glob
+import itertools
 
-PERIOD_SEPARATOR = ".to."
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level='INFO')
@@ -34,16 +35,16 @@ def sync_dbs():
 
     raw = request_with_retry(BLSGOV_DB_LIST_URL)
     new_listing = json.loads(raw)
+    if BLSGOV_DBS is not None:
+        new_listing = [l for l in new_listing if l['id'] in BLSGOV_DBS]
 
-    # TODO
-    # if len(new_listing) == len([l for l in new_listing if l in old_listing]):
-    #     logger.info("nothing is new")
-    #     return
+    if len(new_listing) == len([l for l in new_listing if l in old_listing]):
+        logger.info("nothing is new")
+        return
 
     for l in new_listing:
-        # TODO
-        # if l in old_listing:
-        #     continue
+        if l in old_listing:
+             continue
         sync_db(l['id'])
 
     with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'wt') as f:
@@ -57,8 +58,9 @@ def sync_db(id):
     sync_db_meta(db_folder, id)
     series_dir = os.path.join(db_folder, BLSGOV_SERIES_DIR)
     sync_series(series_dir,  id)
-    sync_db_series_data(db_folder, series_dir, BLSGOV_DB_SERIES_DATA_URL, BLSGOV_SERIES_DATA_FOLDER)
-    sync_db_series_data(db_folder, series_dir, BLSGOV_DB_SERIES_ASPECT_URL, BLSGOV_SERIES_ASPECT_FOLDER)
+
+    sync_db_series_data(os.path.join(db_folder, BLSGOV_SERIES_DATA_FOLDER), series_dir, BLSGOV_DB_SERIES_DATA_URL)
+    sync_db_series_data(os.path.join(db_folder, BLSGOV_SERIES_ASPECT_FOLDER), series_dir, BLSGOV_DB_SERIES_ASPECT_URL)
 
 
 def sync_series(series_dir, id):
@@ -85,40 +87,81 @@ def sync_db_meta(db_folder, id):
         f.write(meta)
 
 
-def sync_db_series_data(db_folder, series_dir, base_url, dir):
-    for sfn in glob.glob(os.path.join(series_dir, '*')):
-        with gzip.open(sfn, 'rt') as f:
+def sync_db_series_data(data_dir, series_dir, base_url):
+    os.makedirs(data_dir, exist_ok=True)
+
+    need_to_remove = dict()
+    need_to_add = dict()
+
+    old_series_dts = dict()
+
+    # TODO corrupted files
+
+    for fn in os.listdir(data_dir):
+        with zipfile.ZipFile(os.path.join(data_dir, fn), 'r') as zf:
+            for item in zf.infolist():
+                if item.filename.endswith(SERIES_LAST_DT_SUFFIX):
+                    old_series_dts[item.filename[:-len(SERIES_LAST_DT_SUFFIX)]] = zf.read(item.filename).decode()
+
+    for sfn in os.listdir(series_dir):
+        with gzip.open(os.path.join(series_dir, sfn), 'rt') as f:
             series = f.read()
             series = json.loads(series)
         for s in series:
-            series_dt = s['end_year'] + s['end_period']
-            data_dir = mk_data_dir(s['id'])
-            data_dir = os.path.join(db_folder, dir, data_dir)
-            os.makedirs(data_dir, exist_ok=True)
-            changed = True
-            for fn in os.listdir(data_dir):
-                if not os.path.isfile(os.path.join(data_dir,fn)):
-                    continue
-                pp = fn.split('.')
-                if pp[0] != s['id']:
-                    continue
-                if pp[1] == series_dt:
-                    changed = False
-                else:
-                    os.remove(os.path.join(data_dir,fn))
-            if not changed:
-                continue
-            data_fn = os.path.join(data_dir, s['id'] + '.' + series_dt + ".json.gz")
-            data = request_with_retry(base_url + "?id=" + s['id'])
-            #print(data)
-            with gzip.open(data_fn, 'wb') as zf:
-                # print(data_fn, data)
-                zf.write(data)
-                zf.flush()
+            id = s['id']
+            new_dt = s['end_year'] + s['end_period']
+            old_dt = old_series_dts.get(id, '')
 
-def mk_data_dir(id):
-    id = [i[0] + i[1] for i in  zip(id[::2], id[1::2])]
-    return os.path.join(*id[:-1])
+            if old_dt != '':
+                if old_dt == new_dt:
+                    continue
+                else:
+                    zip_container_fn = mk_zip_container_name(id)
+                    zip_container_fn = os.path.join(data_dir, zip_container_fn)
+                    if zip_container_fn not in need_to_remove:
+                        need_to_remove[zip_container_fn] = set()
+                    need_to_remove[zip_container_fn].add(id)
+
+            need_to_add[id] = new_dt
+
+    # rm old series
+    for (k, v) in need_to_remove.items():
+        delete_from_zip_container(k, set(itertools.chain.from_iterable((i + SERIES_DATA_SUFFIX, i + SERIES_LAST_DT_SUFFIX) for i in v)))
+
+    # load new series
+    for (id,series_dt) in need_to_add.items():
+        zip_container_fn = mk_zip_container_name(id)
+        zip_container_fn = os.path.join(data_dir, zip_container_fn)
+
+        data_fn = id + SERIES_DATA_SUFFIX
+        meta_fn = id + SERIES_LAST_DT_SUFFIX
+
+        data = request_with_retry(base_url + "?id=" + id)
+        data = data.decode()
+        data = json.loads(data)
+        data = json.dumps(data, indent=1)
+
+        with zipfile.ZipFile(zip_container_fn, 'a', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+            zf.writestr(data_fn, data)
+            zf.writestr(meta_fn, series_dt)
+
+
+def mk_zip_container_name(id):
+    m = hashlib.shake_128()
+    m.update(id.encode())
+    return m.hexdigest(1) + '.zip'
+
+
+def delete_from_zip_container(zip_container, files_to_delete):
+    logger.info("delete " + zip_container + " " + str(files_to_delete))
+    newfn = zip_container + '.new'
+    with zipfile.ZipFile(zip_container, 'r') as zin:
+        with zipfile.ZipFile(newfn, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zout:
+            for item in zin.infolist():
+                buffer = zin.read(item.filename)
+                if item.filename not in files_to_delete:
+                    zout.writestr(item, buffer)
+    shutil.move(newfn, zip_container)
 
 
 if __name__ == '__main__':

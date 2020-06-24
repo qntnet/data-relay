@@ -26,6 +26,12 @@ case "$1" in
         sleep 600
    done
 ;;
+  'replicate_blsgov')
+   while true ; do
+        python -u manage.py blsgov_sync
+        sleep 3600
+   done
+;;
   'server')
     python -u server.py
 ;;

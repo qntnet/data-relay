@@ -3,6 +3,7 @@ import os
 AVANTAGE_KEY = None
 SYMBOLS = None
 INDEXES = None
+BLSGOV_DBS = None
 
 MASTER_ADDR = os.environ.get("MASTER_ADDR", "")
 RELAY_KEY = os.environ.get("REPLICATION_KEY", "")

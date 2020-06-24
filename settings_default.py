@@ -4,6 +4,8 @@ AVANTAGE_KEY = "real_key"
 SYMBOLS = ['NASDAQ:AAPL', 'NASDAQ:FB'] # None for all
 INDEXES = ['SPX'] # None for all
 
+BLSGOV_DBS = ['AP'] # None for all (the DB is very big)
+
 MASTER_TIMEOUT = 12
 MASTER_ERROR_DELAY = 12
 

@@ -6,6 +6,7 @@ import logging
 from secgov.conf import BASE_URL, SECGOV_FORMS_DIR_NAME, SEC_GOV_LAST_ID_FILE_NAME
 from datarelay.settings import SECGOV_INCREMENTAL_UPDATE
 import gzip
+import zipfile
 from itertools import groupby
 
 logger = logging.getLogger(__name__)
@@ -48,29 +49,24 @@ def sync():
         for r in lst:
             last_id = max(last_id, r['id'])
 
-            d = r['date'].split("-")
-            path = os.path.join(SECGOV_FORMS_DIR_NAME, r['type'].replace('/', '-'), *d, r['cik'], r['url'].split('/data/', 1)[1].split('/',2)[1])
-            os.makedirs(path, exist_ok=True)
-            fn = os.path.join(path, 'meta.json.gz')
             facts = r['facts']
             del r['facts']
 
-            with gzip.open(fn, 'wt') as f:
-                r = json.dumps(r)
-                #r = r.encode()
-                #r = gzip.compress(r)
-                f.write(r)
+            os.makedirs(os.path.join(SECGOV_FORMS_DIR_NAME, r['cik']), exist_ok=True)
 
-            path = os.path.join(path, "facts")
-            os.makedirs(path, exist_ok=True)
-            for g in groupby(facts, lambda f:f['name']):
-                fn = os.path.join(path, g[0] + '.json.gz')
-                ff = list(g[1])
-                with gzip.open(fn, 'wt') as f:
-                    ff = json.dumps(ff)
-                    #ff = ff.encode()
-                    #ff = gzip.compress(ff)
-                    f.write(ff)
+            container_fn = r['date'] + '$' + r['type'].replace('/', '-') + '$' + r['url'].split('/data/', 1)[1].split('/',2)[1] + ".zip"
+            container_fn = os.path.join(SECGOV_FORMS_DIR_NAME, r['cik'], container_fn)
+
+            with zipfile.ZipFile(container_fn, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+                r = json.dumps(r, indent=1)
+                z.writestr('meta.json', r)
+                facts = list(sorted(facts, key=lambda f: f['name']))
+                facts = [(g[0], list(g[1])) for g in groupby(facts, lambda f: f['name'])]
+                for g in facts:
+                    fn = "facts/" +  g[0] + '.json'
+                    ff = list(g[1])
+                    ff = json.dumps(ff, indent=1)
+                    z.writestr(fn, ff)
 
         with open(SEC_GOV_LAST_ID_FILE_NAME, 'w') as f:
             f.write(str(last_id))

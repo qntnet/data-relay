@@ -6,95 +6,85 @@ import pandas as pd
 import numpy as np
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+import zipfile
 
-from idx.conf import IDX_LIST_FILE_NAME, IDX_DATA_DIR
-from replication.conf import STOCKS_LAST_DATE_FILE_NAME
+import gzip
+
+from blsgov.conf import *
+from blsgov.sync import mk_zip_container_name
 
 DATE_FORMAT = '%Y-%m-%d'
 
 
-def get_idx_list(request,  last_time=None):
-    min_date = request.GET.get('min_date', '2007-01-01')
-    max_date = request.GET.get('max_date', datetime.date.today().isoformat())
+def get_dbs(request,  last_time=None):
+    with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'r') as f:
+        dbs = f.read()
+    return HttpResponse(dbs, content_type='application/json')
+
+
+def get_db_meta(request, last_time=None):
+    id = request.GET['id']
+    with gzip.open(os.path.join(BLSGOV_DIR, id, BLSGOV_META_FILE_NAME), 'rt') as f:
+        meta = f.read()
+    return HttpResponse(meta, content_type='application/json')
+
+
+def get_series_meta(request, last_time=None):
+    id = request.GET['id']
+    last_series = request.GET.get("last_series", "")
+
+    series_files = sorted(os.listdir(os.path.join(BLSGOV_DIR, id, BLSGOV_SERIES_DIR)))
+
+    fn = next((f for f in series_files if f.split(PERIOD_SEPARATOR)[1].split(".")[0] > last_series), None)
+
+    if fn is None:
+        return HttpResponse('[]', content_type='application/json')
+    else:
+        with gzip.open(os.path.join(BLSGOV_DIR, id, BLSGOV_SERIES_DIR, fn), 'rt') as f:
+            raw = f.read()
+        res = json.loads(raw)
+        res = [r for r in res if r['id'] > last_series]
+        return HttpResponse(json.dumps(res, indent=1), content_type='application/json')
+
+
+def get_series_data(request, last_time=None):
+    args = request.GET
+
+    id = args['id']
+
+    min_date = args.get('min_date', '2007-01-01')
+    min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date() if min_date is not None else datetime.date(2007, 1, 1)
+
+    max_date = args.get('max_date')
+    max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date() if max_date is not None else datetime.date.today()
 
     if last_time is not None:
-        last_time = last_time.split('T')[0]
+        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
         if last_time < max_date:
             max_date = last_time
 
-    try:
-        with open(STOCKS_LAST_DATE_FILE_NAME, 'r') as f:
-            max_allowed_date = f.read()
-            if max_date > max_allowed_date:
-                max_date = max_allowed_date
-    except:
-        pass
+    container_fn = mk_zip_container_name(id)
+    container_fn = os.path.join(BLSGOV_DIR, id[:2], BLSGOV_SERIES_DATA_FOLDER, container_fn)
 
-    with open(IDX_LIST_FILE_NAME, 'r') as f:
-        tickers = f.read()
-    tickers = json.loads(tickers)
-    tickers = [t for t in tickers if os.path.exists(os.path.join(IDX_DATA_DIR, t['id'] + '.nc'))]
-    tickers = [t for t in tickers if len(xr.open_dataarray(os.path.join(IDX_DATA_DIR, t['id'] + '.nc'), cache=True, decode_times=True).loc[min_date:max_date]) > 0]
-    tickers.sort(key = lambda t: t['id'])
-    str_tickers = json.dumps(tickers)
-    return HttpResponse(str_tickers, content_type='application/json')
+    res = []
 
-
-@csrf_exempt
-def get_idx_data(request,  last_time=None):
-    str_body = request.body.decode()
-    dict = json.loads(str_body)
-
-    ids = dict['ids']
-
-    min_date = request.GET.get('min_date', '2007-01-01')
-    max_date = request.GET.get('max_date', datetime.date.today().isoformat())
-
-    if min_date > max_date:
-        return HttpResponse('wrong dates: min_date > max_date', status_code=400)
-
-    if last_time is not None:
-        last_time = last_time.split('T')[0]
-        if last_time < max_date:
-            max_date = last_time
+    min_date = min_date.isoformat()
+    max_date = max_date.isoformat()
 
     try:
-        with open(STOCKS_LAST_DATE_FILE_NAME, 'r') as f:
-            max_allowed_date = f.read()
-            if max_date > max_allowed_date:
-                max_date = max_allowed_date
-    except:
+        with zipfile.ZipFile(container_fn, 'r') as z:
+            res = z.read(id + SERIES_DATA_SUFFIX)
+        res = res.decode()
+        res = json.loads(res)
+        res = [r for r in res if min_date <= r['pub_date'] <= max_date]
+    except KeyError:
+        pass
+    except FileNotFoundError:
         pass
 
-    ids.sort()
+    return HttpResponse(json.dumps(res, indent=1), content_type='application/json')
 
-    with open(IDX_LIST_FILE_NAME, 'r') as f:
-        idx_list = f.read()
-    idx_list = json.loads(idx_list)
-    idx_list = [a for a in idx_list if a['id'] in ids]
-    idx_list.sort(key = lambda a: a['id'])
 
-    output = []
-    for a in idx_list:
-        fn = os.path.join(IDX_DATA_DIR, a['id'] + '.nc')
-        if not os.path.exists(fn):
-            continue
-        part = xr.open_dataarray(fn, cache=True, decode_times=True)
-        part = part.compute()
-        part = part.loc[min_date:max_date]
-        if len(part.time) == 0:
-            continue
-        part.name = a['id']
-        output.append(part)
 
-    if len(output) == 0:
-        return HttpResponse('', content_type='application/x-netcdf')
-
-    output = xr.concat(output, pd.Index([a.name for a in output], name='asset'))
-    output = output.dropna('time', 'all')
-    output = output.transpose('time', 'asset')
-    output = output.loc[np.sort(output.coords['time'].values)[::-1], np.sort(output.coords['asset'].values)]
-    output = output.to_netcdf(compute=True)
-
-    response = HttpResponse(output, content_type='application/x-netcdf')
-    return response
+def get_series_aspect(request, last_time=None):
+    pass

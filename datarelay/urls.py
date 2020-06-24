@@ -21,18 +21,28 @@ import secgov.views
 import assets.views
 import idx.views
 import crypto.views
+import blsgov.views
 
 urlpatterns = [
     path('sec.gov/forms', secgov.views.get_sec_gov_forms),
     path('sec.gov/facts', secgov.views.request_facts),
+
     path('assets', assets.views.get_assets),
-    path('crypto', crypto.views.get_crypto_series),
     path('data', assets.views.get_data),
+
+    path('crypto', crypto.views.get_crypto_series),
+
     path('idx/list', idx.views.get_idx_list),
     path('idx/data', idx.views.get_idx_data),
+
     path('futures/list', futures.views.get_list),
     path('futures/data', futures.views.get_data),
 
+    path('bls.gov/db/list', blsgov.views.get_dbs),
+    path('bls.gov/db/meta', blsgov.views.get_db_meta),
+    path('bls.gov/series/list', blsgov.views.get_series_meta),
+    path('bls.gov/series/data', blsgov.views.get_series_data),
+    path('bls.gov/series/aspect', blsgov.views.get_series_aspect),
 
     path('last/<str:last_time>/sec.gov/forms', secgov.views.get_sec_gov_forms),
     path('last/<str:last_time>/sec.gov/facts', secgov.views.request_facts),

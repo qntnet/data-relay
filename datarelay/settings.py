@@ -70,7 +70,8 @@ INSTALLED_APPS = [
     'datarelay',
     'crypto',
     'replication',
-    'futures'
+    'futures',
+    'blsgov'
 ]
 
 MIDDLEWARE = [

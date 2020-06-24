@@ -15,3 +15,8 @@ BLSGOV_DB_META_URL = urljoin(MASTER_ADDR, 'master/bls.gov/db/meta')
 BLSGOV_DB_SERIES_URL = urljoin(MASTER_ADDR, 'master/bls.gov/series/list')
 BLSGOV_DB_SERIES_DATA_URL = urljoin(MASTER_ADDR, 'master/bls.gov/series/data')
 BLSGOV_DB_SERIES_ASPECT_URL = urljoin(MASTER_ADDR, 'master/bls.gov/series/aspect')
+
+
+SERIES_DATA_SUFFIX = '.data.json'
+SERIES_LAST_DT_SUFFIX = '.meta.txt'
+PERIOD_SEPARATOR = ".to."

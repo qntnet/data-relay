@@ -95,13 +95,26 @@ def sync_db_series_data(data_dir, series_dir, base_url):
 
     old_series_dts = dict()
 
-    # TODO corrupted files
-
     for fn in os.listdir(data_dir):
-        with zipfile.ZipFile(os.path.join(data_dir, fn), 'r') as zf:
-            for item in zf.infolist():
-                if item.filename.endswith(SERIES_LAST_DT_SUFFIX):
-                    old_series_dts[item.filename[:-len(SERIES_LAST_DT_SUFFIX)]] = zf.read(item.filename).decode()
+        try:
+            fn = os.path.join(data_dir, fn)
+            with zipfile.ZipFile(fn, 'r') as zf:
+                if zf.testzip() is not None:
+                    raise zipfile.BadZipFile()
+                chunk = []
+                for item in zf.infolist():
+                    if item.filename.endswith(SERIES_LAST_DT_SUFFIX):
+                        c = (item.filename[:-len(SERIES_LAST_DT_SUFFIX)], zf.read(item.filename).decode())
+                        try:
+                            zf.getinfo(c[0] + SERIES_DATA_SUFFIX)
+                            chunk.append(c)
+                        except KeyError:
+                            pass
+                for c in chunk:
+                    old_series_dts[c[0]] = c[1]
+        except zipfile.BadZipFile:
+            logger.warning("file corrupted " + fn)
+            os.remove(fn)
 
     for sfn in os.listdir(series_dir):
         with gzip.open(os.path.join(series_dir, sfn), 'rt') as f:
@@ -129,21 +142,34 @@ def sync_db_series_data(data_dir, series_dir, base_url):
         delete_from_zip_container(k, set(itertools.chain.from_iterable((i + SERIES_DATA_SUFFIX, i + SERIES_LAST_DT_SUFFIX) for i in v)))
 
     # load new series
-    for (id,series_dt) in need_to_add.items():
-        zip_container_fn = mk_zip_container_name(id)
-        zip_container_fn = os.path.join(data_dir, zip_container_fn)
+    chunk_size = 100
+    keys = list(need_to_add.keys())
+    for offset in range(0, len(keys), chunk_size):
+        ids = keys[offset:(offset + chunk_size)]
 
-        data_fn = id + SERIES_DATA_SUFFIX
-        meta_fn = id + SERIES_LAST_DT_SUFFIX
-
-        data = request_with_retry(base_url + "?id=" + id)
+        data = request_with_retry(base_url + "?ids=" + ','.join(ids))
         data = data.decode()
         data = json.loads(data)
-        data = json.dumps(data, indent=1)
 
-        with zipfile.ZipFile(zip_container_fn, 'a', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-            zf.writestr(data_fn, data)
-            zf.writestr(meta_fn, series_dt)
+        for g in itertools.groupby(data, lambda s: s['id']):
+            id = g[0]
+            data_series = list(g[1])
+            for s in data_series:
+                del s['id']
+
+            series_dt = need_to_add[id]
+
+            zip_container_fn = mk_zip_container_name(id)
+            zip_container_fn = os.path.join(data_dir, zip_container_fn)
+
+            data_fn = id + SERIES_DATA_SUFFIX
+            meta_fn = id + SERIES_LAST_DT_SUFFIX
+
+            data_series = json.dumps(data_series, indent=1)
+
+            with zipfile.ZipFile(zip_container_fn, 'a', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+                zf.writestr(data_fn, data_series)
+                zf.writestr(meta_fn, series_dt)
 
 
 def mk_zip_container_name(id):

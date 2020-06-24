@@ -11,7 +11,12 @@ from django.views.decorators.csrf import csrf_exempt
 from replication.conf import STOCKS_LAST_DATE_FILE_NAME
 from secgov.conf import SECGOV_FORMS_DIR_NAME
 
+import logging
+
 DATE_FORMAT = '%Y-%m-%d'
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level='INFO')
 
 @csrf_exempt
 def request_facts(request, last_time=None):
@@ -207,7 +212,12 @@ def get_fillings(types=None, ciks=None, facts=None, skip_segment=None, min_date=
             if max_date is not None and d > max_date:
                 continue
 
-            with zipfile.ZipFile(os.path.join(root1, r2), 'r') as z:
+            fn = os.path.join(root1, r2)
+            with zipfile.ZipFile(fn, 'r') as z:
+                if z.testzip() is not None:
+                    logging.error("corrupted file " + fn)
+                    continue
+
                 raw = z.read('meta.json')
                 obj = json.loads(raw.decode())
                 fact_list = []

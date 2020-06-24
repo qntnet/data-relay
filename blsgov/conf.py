@@ -18,5 +18,5 @@ BLSGOV_DB_SERIES_ASPECT_URL = urljoin(MASTER_ADDR, 'master/bls.gov/series/aspect
 
 
 SERIES_DATA_SUFFIX = '.data.json'
-SERIES_LAST_DT_SUFFIX = '.meta.txt'
+SERIES_LAST_DT_SUFFIX = '.dt.txt'
 PERIOD_SEPARATOR = ".to."

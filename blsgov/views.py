@@ -63,14 +63,38 @@ def get_series_data(request, last_time=None):
         if last_time < max_date:
             max_date = last_time
 
+    res = get_data_series(id, max_date, min_date, BLSGOV_SERIES_DATA_FOLDER)
+
+    return HttpResponse(json.dumps(res, indent=1), content_type='application/json')
+
+
+def get_series_aspect(request, last_time=None):
+    args = request.GET
+
+    id = args['id']
+
+    min_date = args.get('min_date', '2007-01-01')
+    min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date() if min_date is not None else datetime.date(2007, 1, 1)
+
+    max_date = args.get('max_date')
+    max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date() if max_date is not None else datetime.date.today()
+
+    if last_time is not None:
+        last_time = datetime.datetime.strptime(last_time.split('T')[0], DATE_FORMAT).date()
+        if last_time < max_date:
+            max_date = last_time
+
+    res = get_data_series(id, max_date, min_date, BLSGOV_SERIES_ASPECT_FOLDER)
+
+    return HttpResponse(json.dumps(res, indent=1), content_type='application/json')
+
+
+def get_data_series(id, max_date, min_date, folder):
     container_fn = mk_zip_container_name(id)
-    container_fn = os.path.join(BLSGOV_DIR, id[:2], BLSGOV_SERIES_DATA_FOLDER, container_fn)
-
+    container_fn = os.path.join(BLSGOV_DIR, id[:2], folder, container_fn)
     res = []
-
     min_date = min_date.isoformat()
     max_date = max_date.isoformat()
-
     try:
         with zipfile.ZipFile(container_fn, 'r') as z:
             res = z.read(id + SERIES_DATA_SUFFIX)
@@ -81,10 +105,6 @@ def get_series_data(request, last_time=None):
         pass
     except FileNotFoundError:
         pass
-
-    return HttpResponse(json.dumps(res, indent=1), content_type='application/json')
-
+    return res
 
 
-def get_series_aspect(request, last_time=None):
-    pass

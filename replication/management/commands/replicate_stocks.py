@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
             assets.sync.sync_list()
             assets.sync.sync_data()
-            secgov.sync.sync()
+            #secgov.sync.sync()
             idx.sync.sync_list()
             idx.sync.sync_series()
 

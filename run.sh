@@ -32,6 +32,12 @@ case "$1" in
         sleep 3600
    done
 ;;
+  'replicate_secgov')
+   while true ; do
+        python -u manage.py secgov_sync
+        sleep 3600
+   done
+;;
   'server')
     python -u server.py
 ;;

@@ -76,8 +76,8 @@ def sync():
                 'segment': f['segment'],
                 'value': f['value'],
 
-                'period': f['period']['value'],
-                'period_type': f['period']['type'],
+                'period': f['period']['value'] if f['period'] is not None else None,
+                'period_type': f['period']['type'] if f['period'] is not None else None,
                 'period_length': get_period_length(f),
 
                 'unit': f['unit']['value'] if f['unit'] is not None else None,
@@ -99,7 +99,7 @@ def sync():
 
 
 def get_period_length(fact):
-    if type(fact['period']['value']) == list:
+    if fact['period'] is not None and type(fact['period']['value']) == list:
         start = datetime.datetime.strptime(fact['period']['value'][0], DATE_FORMAT).date()
         end = datetime.datetime.strptime(fact['period']['value'][1], DATE_FORMAT).date()
         return (end - start).days

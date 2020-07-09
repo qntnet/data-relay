@@ -129,6 +129,10 @@ def get_data(request, last_time=None):
     output = output.dropna('time', 'all')
     output = output.transpose('field', 'time', 'asset')
     output = output.loc[:, np.sort(output.coords['time'].values)[::-1], np.sort(output.coords['asset'].values)]
+
+    # TODO fix is_liquid column
+    output.loc[{'field':'is_liquid'}] = output.loc[{'field':'is_liquid'}].fillna(0).where(output.loc[{'field':'close'}] > 0)
+
     output = output.to_netcdf(compute=True)
 
     response = HttpResponse(output, content_type='application/x-netcdf')

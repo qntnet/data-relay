@@ -289,6 +289,15 @@ def get_fillings(types=None, ciks=None, facts=None, skip_segment=None, min_date=
             if max_date is not None and d > max_date:
                 continue
 
+            if offset > 0:
+                offset -= 1
+                continue
+
+            if limit > 0:
+                limit -= 1
+            else:
+                break
+
             fn = os.path.join(root1, r2)
             try:
                 with gzip.open(fn, 'rt') as z:
@@ -304,13 +313,16 @@ def get_fillings(types=None, ciks=None, facts=None, skip_segment=None, min_date=
 
 
 if __name__ == '__main__':
-    # f = get_fillings(
-    #     facts=['us-gaap:Assets'],
-    #     max_date=datetime.date(2013, 7, 1),
-    #     skip_segment=True,
-    #     limit=200
-    # )
-    # print(list(f))
+    f = get_fillings(
+        facts=['us-gaap:Assets'],
+        max_date=datetime.date(2013, 7, 1),
+        skip_segment=True,
+        limit=200
+    )
+    print(list(f))
+
+    exit(0)
+
     t = time.time()
     f = get_facts(facts=['us-gaap:Assets','us-gaap:Liabilities','us-gaap:EarningsPerShareDiluted'],
                   ciks=["796343","883984","901491","1349436","1002638","857737","1357615","29915","1168054","1070412",

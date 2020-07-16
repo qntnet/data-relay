@@ -16,7 +16,7 @@ DATE_FORMAT = '%Y-%m-%d'
 
 
 def get_dbs(request,  last_time=None):
-    with portalocker.Lock(BLSGOV_DB_LIST_FILE_NAME + '.lock', flags=portalocker.LOCK_SH):
+    with portalocker.Lock(BLSGOV_DB_LIST_FILE_NAME + '.lock', flags=portalocker.LOCK_SH | portalocker.LOCK_NB):
         with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'r') as f:
             dbs = f.read()
     return HttpResponse(dbs, content_type='application/json')
@@ -26,7 +26,7 @@ def get_db_meta(request, last_time=None):
     id = request.GET['id']
     db_path = os.path.join(BLSGOV_DIR, id.lower())
 
-    with portalocker.Lock(db_path + '.lock', flags=portalocker.LOCK_SH):
+    with portalocker.Lock(db_path + '.lock', flags=portalocker.LOCK_SH | portalocker.LOCK_NB):
         with gzip.open(os.path.join(db_path, BLSGOV_META_FILE_NAME), 'rt') as f:
             meta = f.read()
         return HttpResponse(meta, content_type='application/json')
@@ -37,8 +37,7 @@ def get_series_meta(request, last_time=None):
     last_series_id = request.GET.get("last_series", "")
     db_path = os.path.join(BLSGOV_DIR, id.lower())
 
-    with portalocker.Lock(db_path + '.lock', flags=portalocker.LOCK_SH):
-
+    with portalocker.Lock(db_path + '.lock', flags=portalocker.LOCK_SH | portalocker.LOCK_NB):
         files = os.listdir(db_path)
         files = [{
             "from": f.split('.')[1],
@@ -111,31 +110,33 @@ def get_data_series(id, max_date, min_date, prefix):
 
     prefix = prefix + '.'
     db_path = os.path.join(BLSGOV_DIR, db_id.lower())
-    files = os.listdir(db_path)
-    files = [{
-        "from": f.split('.')[1],
-        "to": f.split('.')[2],
-        "name": f
-    } for f in files if f.startswith(prefix)]
-    data_file = next((f for f in files if f['from'] <= id <= f['to']), None)
-    if data_file is None:
-        return []
-    path = os.path.join(db_path, data_file['name'])
-    with zipfile.ZipFile(path, 'r') as z:
-        try:
-            content = z.read(id + '.json')
-        except KeyError:
+
+    with portalocker.Lock(db_path + '.lock', flags=portalocker.LOCK_SH | portalocker.LOCK_NB):
+        files = os.listdir(db_path)
+        files = [{
+            "from": f.split('.')[1],
+            "to": f.split('.')[2],
+            "name": f
+        } for f in files if f.startswith(prefix)]
+        data_file = next((f for f in files if f['from'] <= id <= f['to']), None)
+        if data_file is None:
             return []
-    content = content.decode()
-    content = json.loads(content)
+        path = os.path.join(db_path, data_file['name'])
+        with zipfile.ZipFile(path, 'r') as z:
+            try:
+                content = z.read(id + '.json')
+            except KeyError:
+                return []
+        content = content.decode()
+        content = json.loads(content)
 
-    for p in content:
-        p['pub_date'] = get_pub_date(p)
-    content = [p for p in content if min_date <= p['pub_date'] <= max_date]
-    for p in content:
-        p['pub_date'] = p['pub_date'].isoformat()
+        for p in content:
+            p['pub_date'] = get_pub_date(p)
+        content = [p for p in content if min_date <= p['pub_date'] <= max_date]
+        for p in content:
+            p['pub_date'] = p['pub_date'].isoformat()
 
-    return content
+        return content
 
 
 def get_pub_date(p):

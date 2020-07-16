@@ -21,37 +21,41 @@ logging.basicConfig(level='INFO')
 
 
 def sync_dbs():
-    logger.info("Download blsgov db list...")
-    os.makedirs(BLSGOV_DIR, exist_ok=True)
+    go = True
+    while go:
+        go = False
 
-    old_listing = []
+        logger.info("Download blsgov db list...")
+        os.makedirs(BLSGOV_DIR, exist_ok=True)
 
-    try:
-        with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'rt') as f:
-            raw = f.read()
-            old_listing = json.loads(raw)
-    except:
-        logger.exception("can't read " + BLSGOV_DB_LIST_FILE_NAME)
-    old_listing = []
+        old_listing = []
 
-    raw = request_with_retry(BLSGOV_MASTER_URL + 'db/')
-    new_listing = json.loads(raw)
-    if BLSGOV_DBS is not None:
-        new_listing = [l for l in new_listing if l['id'] in BLSGOV_DBS]
+        try:
+            with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'rt') as f:
+                raw = f.read()
+                old_listing = json.loads(raw)
+        except:
+            logger.exception("can't read " + BLSGOV_DB_LIST_FILE_NAME)
 
-    if len(new_listing) == len([l for l in new_listing if l in old_listing]):
-        logger.info("nothing is new")
-        return
+        raw = request_with_retry(BLSGOV_MASTER_URL + 'db/')
+        new_listing = json.loads(raw)
+        if BLSGOV_DBS is not None:
+            new_listing = [l for l in new_listing if l['id'] in BLSGOV_DBS]
 
-    for l in new_listing:
-        if l in old_listing:
-             continue
-        sync_db(l['id'])
+        if len(new_listing) == len([l for l in new_listing if l in old_listing]):
+            logger.info("nothing is new")
+            return
 
-    lockfile = BLSGOV_DB_LIST_FILE_NAME + '.lock'
-    with portalocker.Lock(lockfile, flags=portalocker.LOCK_EX):
-        with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'wt') as f:
-           f.write(json.dumps(new_listing, indent=1))
+        for l in new_listing:
+            if l in old_listing:
+                 continue
+            sync_db(l['id'])
+            go = True
+
+        lockfile = BLSGOV_DB_LIST_FILE_NAME + '.lock'
+        with portalocker.Lock(lockfile, flags=portalocker.LOCK_EX):
+            with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'wt') as f:
+               f.write(json.dumps(new_listing, indent=1))
 
 
 def sync_db(id):

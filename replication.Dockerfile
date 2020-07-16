@@ -19,6 +19,7 @@ RUN conda install -y \
     'scipy=1.3.2' \
     'django=2.2.5' \
     'conda-forge::bjoern=2.2.*' \
+    'portalocker=1.5.2' \
      && conda clean -tipsy && conda clean --all --yes
 
 COPY . /opt/

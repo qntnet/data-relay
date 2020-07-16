@@ -16,7 +16,7 @@ Then you need anaconda with python3. Install them.
 After that, create a virual environment for this project:
 
 ```bash
-$ conda create --name datarelay python=3.7 django=2.2.5 xarray=0.15 scipy=1.3.2
+$ conda create --name datarelay python=3.7 django=2.2.5 xarray=0.15 scipy=1.3.2 portalocker=1.5.2
 ```
 
 Later, you can drop this environment if you don't need it or 

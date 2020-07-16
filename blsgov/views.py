@@ -7,44 +7,61 @@ import numpy as np
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import zipfile
-
+import portalocker
 import gzip
 
 from blsgov.conf import *
-from blsgov.sync import mk_zip_container_name
 
 DATE_FORMAT = '%Y-%m-%d'
 
 
 def get_dbs(request,  last_time=None):
-    with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'r') as f:
-        dbs = f.read()
+    with portalocker.Lock(BLSGOV_DB_LIST_FILE_NAME + '.lock', flags=portalocker.LOCK_SH):
+        with gzip.open(BLSGOV_DB_LIST_FILE_NAME, 'r') as f:
+            dbs = f.read()
     return HttpResponse(dbs, content_type='application/json')
 
 
 def get_db_meta(request, last_time=None):
     id = request.GET['id']
-    with gzip.open(os.path.join(BLSGOV_DIR, id, BLSGOV_META_FILE_NAME), 'rt') as f:
-        meta = f.read()
-    return HttpResponse(meta, content_type='application/json')
+    db_path = os.path.join(BLSGOV_DIR, id.lower())
+
+    with portalocker.Lock(db_path + '.lock', flags=portalocker.LOCK_SH):
+        with gzip.open(os.path.join(db_path, BLSGOV_META_FILE_NAME), 'rt') as f:
+            meta = f.read()
+        return HttpResponse(meta, content_type='application/json')
 
 
 def get_series_meta(request, last_time=None):
     id = request.GET['id']
-    last_series = request.GET.get("last_series", "")
+    last_series_id = request.GET.get("last_series", "")
+    db_path = os.path.join(BLSGOV_DIR, id.lower())
 
-    series_files = sorted(os.listdir(os.path.join(BLSGOV_DIR, id, BLSGOV_SERIES_DIR)))
+    with portalocker.Lock(db_path + '.lock', flags=portalocker.LOCK_SH):
 
-    fn = next((f for f in series_files if f.split(PERIOD_SEPARATOR)[1].split(".")[0] > last_series), None)
+        files = os.listdir(db_path)
+        files = [{
+            "from": f.split('.')[1],
+            "to": f.split('.')[2],
+            "name": f
+        } for f in files if f.startswith('series.')]
+        files.sort(key=lambda f: f['from'])
+        if last_series_id is None:
+            series_file = files[0]
+        else:
+            series_file = next((f for f in files if f['to'] > last_series_id), None)
+        if series_file is None:
+            return HttpResponse('[]', content_type='application/json')
 
-    if fn is None:
-        return HttpResponse('[]', content_type='application/json')
-    else:
-        with gzip.open(os.path.join(BLSGOV_DIR, id, BLSGOV_SERIES_DIR, fn), 'rt') as f:
-            raw = f.read()
-        res = json.loads(raw)
-        res = [r for r in res if r['id'] > last_series]
-        return HttpResponse(json.dumps(res, indent=1), content_type='application/json')
+        series_path = os.path.join(db_path, series_file['name'])
+        with gzip.open(series_path, 'rt') as f:
+            series = f.read()
+        series = json.loads(series)
+
+        if last_series_id is not None:
+            series = [s for s in series if s['id'] > last_series_id]
+
+        return HttpResponse(json.dumps(series, indent=1), content_type='application/json')
 
 
 def get_series_data(request, last_time=None):
@@ -63,7 +80,7 @@ def get_series_data(request, last_time=None):
         if last_time < max_date:
             max_date = last_time
 
-    res = get_data_series(id, max_date, min_date, BLSGOV_SERIES_DATA_FOLDER)
+    res = get_data_series(id, max_date, min_date, 'data')
 
     return HttpResponse(json.dumps(res, indent=1), content_type='application/json')
 
@@ -84,27 +101,57 @@ def get_series_aspect(request, last_time=None):
         if last_time < max_date:
             max_date = last_time
 
-    res = get_data_series(id, max_date, min_date, BLSGOV_SERIES_ASPECT_FOLDER)
+    res = get_data_series(id, max_date, min_date, 'aspect')
 
     return HttpResponse(json.dumps(res, indent=1), content_type='application/json')
 
 
-def get_data_series(id, max_date, min_date, folder):
-    container_fn = mk_zip_container_name(id)
-    container_fn = os.path.join(BLSGOV_DIR, id[:2], folder, container_fn)
-    res = []
-    min_date = min_date.isoformat()
-    max_date = max_date.isoformat()
-    try:
-        with zipfile.ZipFile(container_fn, 'r') as z:
-            res = z.read(id + SERIES_DATA_SUFFIX)
-        res = res.decode()
-        res = json.loads(res)
-        res = [r for r in res if min_date <= r['pub_date'] <= max_date]
-    except KeyError:
-        pass
-    except FileNotFoundError:
-        pass
-    return res
+def get_data_series(id, max_date, min_date, prefix):
+    db_id = id[:2].lower()
+
+    prefix = prefix + '.'
+    db_path = os.path.join(BLSGOV_DIR, db_id.lower())
+    files = os.listdir(db_path)
+    files = [{
+        "from": f.split('.')[1],
+        "to": f.split('.')[2],
+        "name": f
+    } for f in files if f.startswith(prefix)]
+    data_file = next((f for f in files if f['from'] <= id <= f['to']), None)
+    if data_file is None:
+        return []
+    path = os.path.join(db_path, data_file['name'])
+    with zipfile.ZipFile(path, 'r') as z:
+        try:
+            content = z.read(id + '.json')
+        except KeyError:
+            return []
+    content = content.decode()
+    content = json.loads(content)
+
+    for p in content:
+        p['pub_date'] = get_pub_date(p)
+    content = [p for p in content if min_date <= p['pub_date'] <= max_date]
+    for p in content:
+        p['pub_date'] = p['pub_date'].isoformat()
+
+    return content
 
 
+def get_pub_date(p):
+    PUB_OFFSET = 14
+    if p['period'][0] == 'A':
+        return datetime.date(p['year'] + 1, 1, 1) - datetime.timedelta(days=1) + datetime.timedelta(days=PUB_OFFSET)
+    month = None
+    if p['period'][0] == 'M':
+        month = int(p['period'][1:])
+    elif p['period'][0] == 'Q':
+        month = int(p['period'][1:]) * 3
+    elif p['period'][0] == 'S':
+        month = int(p['period'][1:]) * 6
+    else:
+        raise Exception("wrong period")
+    if month >= 12:
+        return datetime.date(p['year'] + 1, 1, 1) - datetime.timedelta(days=1) + datetime.timedelta(days=PUB_OFFSET)
+    else:
+        return datetime.date(p['year'], month + 1, 1) - datetime.timedelta(days=1) + datetime.timedelta(days=PUB_OFFSET)

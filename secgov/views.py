@@ -296,7 +296,7 @@ def get_fillings(types=None, ciks=None, facts=None, skip_segment=None, min_date=
                 and (max_date is None or datetime.date.fromisoformat(i['date']) >= max_date)
                ]
 
-        idx = [i for i in idx if types is None or i['type'] not in types ]
+        idx = [i for i in idx if types is None or i['type'] in types ]
 
         if offset - len(idx) >= 0:
             offset -= len(idx)
@@ -341,16 +341,17 @@ def get_fillings(types=None, ciks=None, facts=None, skip_segment=None, min_date=
 
 if __name__ == '__main__':
 
-    # t = time.time()
-    # f = get_fillings(
-    #     facts=['us-gaap:Assets'],
-    #     max_date=datetime.date(2013, 7, 1),
-    #     skip_segment=True,
-    #     limit=20000
-    # )
-    # f = list(f)
-    # print(len(f))
-    # print(time.time()-t)
+    t = time.time()
+    f = get_fillings(
+        facts=['us-gaap:Assets'],
+        max_date=datetime.date(2013, 7, 1),
+        skip_segment=True,
+        limit=200
+    )
+    f = list(f)
+    print(len(f))
+    print(time.time()-t)
+    exit(0)
 
     t = time.time()
     f = get_facts(facts=['us-gaap:Assets','us-gaap:Liabilities','us-gaap:EarningsPerShareDiluted','us-gaap:AssetsCurrent'],

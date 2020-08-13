@@ -293,7 +293,7 @@ def get_fillings(types=None, ciks=None, facts=None, skip_segment=None, min_date=
 
         idx = [i for i in idx
                 if  (min_date is None or datetime.date.fromisoformat(i['date']) >= min_date)
-                and (max_date is None or datetime.date.fromisoformat(i['date']) >= max_date)
+                and (max_date is None or datetime.date.fromisoformat(i['date']) <= max_date)
                ]
 
         idx = [i for i in idx if types is None or i['type'] in types ]
@@ -344,6 +344,7 @@ if __name__ == '__main__':
     t = time.time()
     f = get_fillings(
         facts=['us-gaap:Assets'],
+        types=['10-Q'],
         max_date=datetime.date(2013, 7, 1),
         skip_segment=True,
         limit=200

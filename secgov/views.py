@@ -4,12 +4,13 @@ import json
 import time
 import gzip
 import sys
+import zipfile
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from replication.conf import STOCKS_LAST_DATE_FILE_NAME
-from secgov.conf import SECGOV_FORMS_DIR_NAME, SECGOV_FACTS_DIR_NAME
+from secgov.conf import SEC_GOV_IDX_FILE_NAME, SEC_GOV_CONTENT_FILE_NAME, SEC_GOV_FACTS_FILE_NAME, SECGOV_BASE_DIR
 
 import logging
 
@@ -90,31 +91,35 @@ def get_facts(ciks=None, facts=None, columns=None, max_date=None, min_date=None,
             max_period = 95
 
     for cik in ciks:
-        for fact in facts:
-            fn = os.path.join(SECGOV_FACTS_DIR_NAME, cik, fact + '.json.list.gz')
-            try:
-                with gzip.open(fn, 'rt') as f:
-                    raw = f.read()
-                raw = "[\n" + ",\n" .join(raw.split("\n")[:-1]) + "]"
-                page = json.loads(raw)
-                for obj in page:
-                    if max_date is not None and max_date < obj['report_date']:
+        try:
+            with zipfile.ZipFile(os.path.join(SECGOV_BASE_DIR, cik, SEC_GOV_FACTS_FILE_NAME)) as z:
+                for fact in facts:
+                    try:
+                        raw = z.read(fact + '.json')
+                        page = json.loads(raw)
+                    except KeyError:
                         continue
-                    if min_date is not None and min_date > obj['report_date']:
+                    except Exception:
+                        logger.exception("unexpected")
                         continue
-                    if obj['period_length'] is not None and not (min_period <= obj['period_length'] <= max_period):
-                        continue
-                    if skip_segment and obj['segment'] is not None:
-                        continue
-                    if types is not None and obj['report_type'] not in types:
-                        continue
-                    clear_fact(obj, columns)
-                    yield obj
-            except json.decoder.JSONDecodeError:
-                logging.info("can't decode " + fn)
-            except FileNotFoundError:
-                pass
-
+                    for obj in page:
+                        if max_date is not None and max_date < obj['report_date']:
+                            continue
+                        if min_date is not None and min_date > obj['report_date']:
+                            continue
+                        if obj['period_length'] is not None and not (min_period <= obj['period_length'] <= max_period):
+                            continue
+                        if skip_segment and obj['segment'] is not None:
+                            continue
+                        if types is not None and obj['report_type'] not in types:
+                            continue
+                        clear_fact(obj, columns)
+                        yield obj
+        except FileNotFoundError:
+            continue
+        except Exception:
+            logger.exception("unexpected")
+            continue
 
 def clear_fact(fact, columns):
     if columns is not None and 'cik' not in columns:
@@ -270,61 +275,85 @@ def get_fillings(types=None, ciks=None, facts=None, skip_segment=None, min_date=
     if types is not None:
         types = [t.replace('/', '-') for t in types]
 
-    for r1 in sorted(os.listdir(SECGOV_FORMS_DIR_NAME)):
+    for r1 in sorted(os.listdir(SECGOV_BASE_DIR)):
+        if r1 == SEC_GOV_IDX_FILE_NAME:
+            continue
         if ciks is not None and r1 not in ciks:
             continue
 
-        root1 = os.path.join(SECGOV_FORMS_DIR_NAME, r1)
-        for r2 in sorted(os.listdir(root1)):
-            rp = r2.split('$')
+        try:
+            with gzip.open(os.path.join(SECGOV_BASE_DIR, r1, SEC_GOV_IDX_FILE_NAME), 'rt') as f:
+                idx = f.read()
+            idx = json.loads(idx)
+        except FileNotFoundError:
+            continue
+        except Exception:
+            logger.exception("unexpected")
+            continue
 
-            tp = rp[1]
-            if types is not None and tp not in types:
-                continue
+        idx = [i for i in idx
+                if  (min_date is None or datetime.date.fromisoformat(i['date']) >= min_date)
+                and (max_date is None or datetime.date.fromisoformat(i['date']) >= max_date)
+               ]
 
-            d = rp[0].split("-")
-            d = datetime.date(int(d[0]), int(d[1]), int(d[2]))
-            if min_date is not None and d < min_date:
-                continue
-            if max_date is not None and d > max_date:
-                continue
+        idx = [i for i in idx if types is None or i['type'] not in types ]
 
-            if offset > 0:
-                offset -= 1
-                continue
+        if offset - len(idx) >= 0:
+            offset -= len(idx)
+            continue
+        else:
+            idx = idx[offset:]
+            offset = 0
 
-            if limit > 0:
-                limit -= 1
-            else:
-                break
+        try:
+            with zipfile.ZipFile(os.path.join(SECGOV_BASE_DIR, r1, SEC_GOV_CONTENT_FILE_NAME), 'r') as z:
+                for i in idx:
+                    if limit <= 0:
+                        return
+                    limit -= 1
+                    try:
+                        r = z.read(i['id'] + '.json')
+                        r = r.decode()
+                        r = json.loads(r)
+                    except Exception:
+                        logger.exception("unexpected")
+                        continue
+                    r['facts'] = [ f for f in r['facts']
+                                   if (facts is None or f['name'] in facts) and (not skip_segment or f.get('segment') is None)
+                                 ]
+                    # backward compatibility
+                    for f in r['facts']:
+                        if 'segment' not in f:
+                            f['segment'] = None
+                        if 'unit' not in f:
+                            f['unit'] = None
+                        if 'period' not in f:
+                            f['period'] = None
 
-            fn = os.path.join(root1, r2)
-            try:
-                with gzip.open(fn, 'rt') as z:
-                    raw = z.read()
-                obj = json.loads(raw)
-            except json.decoder.JSONDecodeError:
-                logging.info("can't decode " + fn)
+                    yield r
 
-            obj['facts'] = [ f for f in obj['facts']
-                if (facts is None or f['name'] in facts) and (not skip_segment or f.get('segment') is None)
-            ]
-            yield obj
+        except FileNotFoundError:
+            continue
+        except Exception:
+            logger.exception("unexpected")
+            continue
 
 
 if __name__ == '__main__':
-    f = get_fillings(
-        facts=['us-gaap:Assets'],
-        max_date=datetime.date(2013, 7, 1),
-        skip_segment=True,
-        limit=200
-    )
-    print(list(f))
 
-    exit(0)
+    # t = time.time()
+    # f = get_fillings(
+    #     facts=['us-gaap:Assets'],
+    #     max_date=datetime.date(2013, 7, 1),
+    #     skip_segment=True,
+    #     limit=20000
+    # )
+    # f = list(f)
+    # print(len(f))
+    # print(time.time()-t)
 
     t = time.time()
-    f = get_facts(facts=['us-gaap:Assets','us-gaap:Liabilities','us-gaap:EarningsPerShareDiluted'],
+    f = get_facts(facts=['us-gaap:Assets','us-gaap:Liabilities','us-gaap:EarningsPerShareDiluted','us-gaap:AssetsCurrent'],
                   ciks=["796343","883984","901491","1349436","1002638","857737","1357615","29915","1168054","1070412",
                         "92380","914208","1064728","55785","1324404","6769","920148","63276","101829","93410","1065280",
                         "40545","886163","1037676","79282","88205","918160","30625","885639","7332","56873","1037016",

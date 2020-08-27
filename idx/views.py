@@ -7,10 +7,44 @@ import numpy as np
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from idx.conf import IDX_LIST_FILE_NAME, IDX_DATA_DIR
+from idx.conf import IDX_LIST_FILE_NAME, IDX_DATA_DIR, MAJOR_IDX_LIST_FILE_NAME, MAJOR_IDX_DATA_FILE_NAME
 from replication.conf import STOCKS_LAST_DATE_FILE_NAME
 
 DATE_FORMAT = '%Y-%m-%d'
+
+
+def get_major_list(request,  last_time=None):
+    with open(MAJOR_IDX_LIST_FILE_NAME, 'r') as f:
+        raw = f.read()
+    tickers = json.loads(raw)
+    for t in tickers:
+        del t['last_time']
+    return HttpResponse(json.dumps(tickers), content_type='application/json')
+
+
+def get_major_data(request,  last_time=None):
+    min_date = request.GET.get('min_date', '2007-01-01')
+    max_date = request.GET.get('max_date', datetime.date.today().isoformat())
+
+    if last_time is not None:
+        last_time = last_time.split('T')[0]
+        if last_time < max_date:
+            max_date = last_time
+
+    try:
+        with open(STOCKS_LAST_DATE_FILE_NAME, 'r') as f:
+            max_allowed_date = f.read()
+            if max_date > max_allowed_date:
+                max_date = max_allowed_date
+    except:
+        pass
+
+    output = xr.open_dataarray(MAJOR_IDX_DATA_FILE_NAME, cache=True, decode_times=True)
+    output = output.transpose('field', 'time', 'asset')
+    output = output.loc[:, max_date:min_date]
+    output = output.loc[:, np.sort(output.time.values)[::-1], np.sort(output.asset.values)]
+    output = output.to_netcdf(compute=True)
+    return HttpResponse(output, content_type='application/x-netcdf')
 
 
 def get_idx_list(request,  last_time=None):
@@ -36,6 +70,9 @@ def get_idx_list(request,  last_time=None):
     tickers = [t for t in tickers if os.path.exists(os.path.join(IDX_DATA_DIR, t['id'] + '.nc'))]
     tickers = [t for t in tickers if len(xr.open_dataarray(os.path.join(IDX_DATA_DIR, t['id'] + '.nc'), cache=True, decode_times=True).loc[min_date:max_date]) > 0]
     tickers.sort(key = lambda t: t['id'])
+    for t in tickers:
+        del t['last_time']
+        del t['etf']
     str_tickers = json.dumps(tickers)
     return HttpResponse(str_tickers, content_type='application/json')
 

@@ -10,3 +10,9 @@ IDX_LIST_URL = urljoin(MASTER_ADDR, 'master/idx-list')
 IDX_DATA_DIR = os.path.join(IDX_DIR, 'data')
 IDX_DATA_VERIFY_URL = urljoin(MASTER_ADDR, 'master/idx-verify')
 IDX_DATA_FULL_URL = urljoin(MASTER_ADDR, 'master/idx-data/' + str(RELAY_KEY))
+
+MAJOR_IDX_LIST_URL = urljoin(MASTER_ADDR, 'master/major-idx-list')
+MAJOR_IDX_DATA_URL = urljoin(MASTER_ADDR, 'master/major-idx-data/' + str(RELAY_KEY))
+
+MAJOR_IDX_LIST_FILE_NAME = os.path.join(IDX_DIR, 'major-list.json')
+MAJOR_IDX_DATA_FILE_NAME = os.path.join(IDX_DIR, 'major-data.nc')

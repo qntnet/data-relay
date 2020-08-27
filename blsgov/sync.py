@@ -14,8 +14,6 @@ from datarelay.avantage import load_series_daily_adjusted
 from datarelay.http import request_with_retry
 from datarelay.settings import INDEXES, RELAY_KEY, BLSGOV_DBS
 
-
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level='INFO')
 

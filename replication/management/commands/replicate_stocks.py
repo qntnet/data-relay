@@ -23,8 +23,8 @@ class Command(BaseCommand):
             assets.sync.sync_list()
             assets.sync.sync_data()
             #secgov.sync.sync()
-            idx.sync.sync_list()
-            idx.sync.sync_series()
+            idx.sync.sync_indexes()
+            idx.sync.sync_major()
 
             request_with_retry(POST_STATUS_URL + "/stocks/" + server_dt + "/")
 

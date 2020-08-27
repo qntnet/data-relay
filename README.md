@@ -46,7 +46,11 @@ INDEXES = ['SPX']                       # List of index symbols or None to sync 
 
 ```bash
 conda activate datarelay
-python manage.py sync
+python manage.py assets_sync # stocks
+python manage.py crypto_sync # stocks
+python manage.py secgov_sync # fundamental
+python manage.py idx_sync # indexes sync
+python manage.py blsgov_sync # global data from bls.gov
 ```
 
 It takes some time, especially if you set `SYMBOLS = None`. 

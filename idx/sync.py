@@ -32,16 +32,18 @@ def sync_major():
 
     if old_listing == listing:
         logger.info("nothing changed")
-        #return
-
-    with open(MAJOR_IDX_LIST_FILE_NAME, 'wb') as f:
-        f.write(listing)
+        return
 
     logger.info("Download major idx data...")
     data = request_with_retry(MAJOR_IDX_DATA_URL)
 
     with open(MAJOR_IDX_DATA_FILE_NAME, 'wb') as f:
         f.write(data)
+
+    with open(MAJOR_IDX_LIST_FILE_NAME, 'wb') as f:
+        f.write(listing)
+
+    logger.info("Done.")
 
 
 def sync_indexes():
@@ -63,11 +65,7 @@ def sync_indexes():
 
     if listing == old_listing:
         logger.info('nothing changed')
-        #return
-
-    with open(IDX_LIST_FILE_NAME, 'w') as f:
-        f.write(json.dumps(listing, indent=2))
-    logger.info('Done.')
+        return
 
     logger.info("Download idx data...")
     os.makedirs(IDX_DATA_DIR, exist_ok=True)
@@ -101,7 +99,10 @@ def sync_indexes():
             data = xr.open_dataarray(data)
         file_name = os.path.join(IDX_DATA_DIR, a['id'] + '.nc')
         data.to_netcdf(path=file_name, compute=True)
-    logger.info("Done.")
+
+    with open(IDX_LIST_FILE_NAME, 'w') as f:
+        f.write(json.dumps(listing, indent=2))
+    logger.info('Done.')
 
 
 if __name__ == '__main__':

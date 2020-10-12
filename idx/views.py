@@ -18,7 +18,10 @@ def get_major_list(request,  last_time=None):
         raw = f.read()
     tickers = json.loads(raw)
     for t in tickers:
-        del t['last_time']
+        try:
+            del t['last_time']
+        except Exception as ignored:
+            pass
     return HttpResponse(json.dumps(tickers), content_type='application/json')
 
 
@@ -71,8 +74,14 @@ def get_idx_list(request,  last_time=None):
     tickers = [t for t in tickers if len(xr.open_dataarray(os.path.join(IDX_DATA_DIR, t['id'] + '.nc'), cache=True, decode_times=True).loc[min_date:max_date]) > 0]
     tickers.sort(key = lambda t: t['id'])
     for t in tickers:
-        del t['last_time']
-        del t['etf']
+        try:
+            del t['last_time']
+        except Exception as ignored:
+            pass
+        try:
+            del t['etf']
+        except Exception as ignored:
+            pass
     str_tickers = json.dumps(tickers)
     return HttpResponse(str_tickers, content_type='application/json')
 

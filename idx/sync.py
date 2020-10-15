@@ -69,9 +69,6 @@ def sync_indexes():
 
     logger.info("Download idx data...")
     os.makedirs(IDX_DATA_DIR, exist_ok=True)
-    with open(IDX_LIST_FILE_NAME, 'r') as f:
-        listing = f.read()
-    listing = json.loads(listing)
     for a in listing:
         if RELAY_KEY is None:
             if a.get('etf') is None:

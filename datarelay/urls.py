@@ -56,7 +56,7 @@ urlpatterns = [
     path('last/<str:last_time>/idx/data', idx.views.get_idx_data),
     path('last/<str:last_time>/major-idx/list', idx.views.get_major_list),
     path('last/<str:last_time>/major-idx/data', idx.views.get_major_data),
-    path('futures/<str:last_time>/list', futures.views.get_list),
-    path('futures/<str:last_time>/data', futures.views.get_data),
+    path('last/<str:last_time>/futures/list', futures.views.get_list),
+    path('last/<str:last_time>/futures/data', futures.views.get_data),
     # path('admin/', admin.site.urls),
 ]

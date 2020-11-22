@@ -12,6 +12,13 @@ case "$1" in
         sleep 60
    done
 ;;
+  'replicate_cryptofutures')
+   python -u manage.py replicate_post_status
+   while true ; do
+        python -u manage.py replicate_cryptofutures
+        sleep 3600
+   done
+;;
   'replicate_stocks')
    python -u manage.py replicate_post_status
    while true ; do
@@ -23,7 +30,7 @@ case "$1" in
    python -u manage.py replicate_post_status
    while true ; do
         python -u manage.py replicate_futures
-        sleep 600
+        sleep 3600
    done
 ;;
   'replicate_blsgov')

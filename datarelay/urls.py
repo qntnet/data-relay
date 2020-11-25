@@ -32,7 +32,7 @@ urlpatterns = [
     path('data', assets.views.get_data),
 
     path('crypto', crypto.views.get_crypto_series),
-    path('cryptofutures', crypto.views.get_crypto_series),
+    path('cryptofutures', cryptofutures.views.get_cryptofutures_series),
 
     path('idx/list', idx.views.get_idx_list),
     path('idx/data', idx.views.get_idx_data),

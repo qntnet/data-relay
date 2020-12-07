@@ -24,7 +24,7 @@ def get_data(request, last_time=None):
     args = request.GET
 
     min_date = args.get('min_date')
-    min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date() if min_date is not None else datetime.date(2007, 1, 1)
+    min_date = datetime.datetime.strptime(min_date, DATE_FORMAT).date() if min_date is not None else datetime.date(1990, 1, 1)
 
     max_date = args.get('max_date')
     max_date = datetime.datetime.strptime(max_date, DATE_FORMAT).date() if max_date is not None else datetime.date.today()

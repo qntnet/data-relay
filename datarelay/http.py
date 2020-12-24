@@ -14,9 +14,9 @@ def request_with_retry(url, data = None):
         try:
             logger.info("request " + url)
             response = urlopen(url, data=data, timeout=MASTER_TIMEOUT)
+            raw = response.read()
             if response.status == 404:
                 return None
-            raw = response.read()
             return raw
         except KeyboardInterrupt:
             raise

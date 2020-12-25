@@ -1,10 +1,10 @@
 from django.core.management import BaseCommand
 
 import assets.sync
-import secgov.sync
 import idx.sync
 from datarelay.http import request_with_retry
 from replication.conf import STOCKS_LAST_DATE_FILE_NAME, STOCKS_LAST_DATE_URL, POST_STATUS_URL
+from datarelay.settings import RELAY_KEY
 
 
 class Command(BaseCommand):
@@ -26,7 +26,8 @@ class Command(BaseCommand):
             idx.sync.sync_indexes()
             idx.sync.sync_major()
 
-            request_with_retry(POST_STATUS_URL + "/stocks/" + server_dt + "/")
+            if RELAY_KEY is not None and RELAY_KEY != '':
+                request_with_retry(POST_STATUS_URL + "/stocks/" + server_dt + "/")
 
             with open(STOCKS_LAST_DATE_FILE_NAME, 'w') as f:
                 f.write(server_dt)

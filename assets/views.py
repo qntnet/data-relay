@@ -42,7 +42,6 @@ def get_assets(request, last_time=None):
     for t in tickers:
         del t['internal_id']
         del t['liquid_ranges']
-        del t['avantage_symbol']
 
     tickers.sort(key = lambda t: t['id'])
     str_tickers = json.dumps(tickers)

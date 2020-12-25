@@ -26,6 +26,12 @@ case "$1" in
         sleep 600
    done
 ;;
+  'replicate_free_stocks')
+   while true ; do
+        python -u manage.py replicate_stocks
+        sleep 600
+   done
+;;
   'replicate_futures')
    python -u manage.py replicate_post_status
    while true ; do

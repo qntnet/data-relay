@@ -16,7 +16,7 @@ DATE_FORMAT = '%Y-%m-%d'
 
 def get_list(request, last_time=None):
     if not FUTURES_ENABLED:
-        HttpResponse("Disabled.", content_type='text/plain', status=503)
+        return HttpResponse("Disabled.", content_type='text/plain', status=503)
     with open(FUTURES_LIST_FILE_NAME, 'r') as f:
         lst = f.read()
     return HttpResponse(lst, content_type='application/json')
@@ -24,7 +24,7 @@ def get_list(request, last_time=None):
 
 def get_data(request, last_time=None):
     if not FUTURES_ENABLED:
-        HttpResponse("Disabled.", content_type='text/plain', status=503)
+        return HttpResponse("Disabled.", content_type='text/plain', status=503)
 
     args = request.GET
 

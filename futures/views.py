@@ -8,19 +8,24 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from assets.conf import ASSETS_LIST_FILE_NAME, ASSETS_DATA_DIR
-from futures.conf import FUTURES_LIST_FILE_NAME, FUTURES_DATA_FILE_NAME
+from futures.conf import FUTURES_LIST_FILE_NAME, FUTURES_DATA_FILE_NAME, FUTURES_ENABLED
 from replication.conf import STOCKS_LAST_DATE_FILE_NAME, FUTURES_LAST_DATE_FILE_NAME
 
 DATE_FORMAT = '%Y-%m-%d'
 
 
 def get_list(request, last_time=None):
+    if not FUTURES_ENABLED:
+        HttpResponse("Disabled.", content_type='text/plain', status=503)
     with open(FUTURES_LIST_FILE_NAME, 'r') as f:
         lst = f.read()
     return HttpResponse(lst, content_type='application/json')
 
 
 def get_data(request, last_time=None):
+    if not FUTURES_ENABLED:
+        HttpResponse("Disabled.", content_type='text/plain', status=503)
+
     args = request.GET
 
     min_date = args.get('min_date')

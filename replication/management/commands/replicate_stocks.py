@@ -23,10 +23,10 @@ class Command(BaseCommand):
             assets.sync.sync_list()
             assets.sync.sync_data()
             #secgov.sync.sync()
-            idx.sync.sync_indexes()
-            idx.sync.sync_major()
 
             if RELAY_KEY is not None and RELAY_KEY != '':
+                idx.sync.sync_indexes()
+                idx.sync.sync_major()
                 request_with_retry(POST_STATUS_URL + "/stocks/" + server_dt + "/")
 
             with open(STOCKS_LAST_DATE_FILE_NAME, 'w') as f:

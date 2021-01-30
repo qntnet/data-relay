@@ -8,7 +8,7 @@ if RELAY_KEY is None or RELAY_KEY == '':
     STOCKS_LAST_DATE_FILE_NAME = os.path.join(WORK_DIR, 'free-stocks.dt.txt')
 
 CRYPTO_LAST_DATE_FILE_NAME = os.path.join(WORK_DIR, 'crypto.dt.txt')
-CRYPTOFUTURES_LAST_DATE_FILE_NAME = os.path.join(WORK_DIR, 'crypto.dt.txt')
+CRYPTOFUTURES_LAST_DATE_FILE_NAME = os.path.join(WORK_DIR, 'cryptofutures.dt.txt')
 FUTURES_LAST_DATE_FILE_NAME = os.path.join(WORK_DIR, 'futures.dt.txt')
 
 STOCKS_LAST_DATE_URL = urljoin(MASTER_ADDR, 'master/last-update')
